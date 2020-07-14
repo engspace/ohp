@@ -1,0 +1,3 @@
+[submodule "engspace"]
+	path = engspace
+	url = https://github.com/engspace/engspace.git

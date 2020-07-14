@@ -1,0 +1,16 @@
+{
+    "extends": "../../tsconfig.base.json",
+
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "tsBuildInfoFile": "../../.build-cache/server.tsbuildinfo"
+    },
+
+    "include": [ "src" ],
+    "references": [
+        { "path": "../../engspace/packages/core", "prepend": false },
+        { "path": "../../engspace/packages/server-db", "prepend": false },
+        { "path": "../../engspace/packages/server-api", "prepend": false }
+    ]
+}

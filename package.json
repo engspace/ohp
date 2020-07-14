@@ -1,0 +1,11 @@
+{
+  "name": "ohp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open Hardware Platform",
+  "author": "Remi Thebault <remi.thebault@gmail.com>",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ]
+}

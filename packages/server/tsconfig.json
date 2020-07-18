@@ -9,6 +9,7 @@
 
     "include": [ "src" ],
     "references": [
+        { "path": "../core", "prepend": false },
         { "path": "../../engspace/packages/core", "prepend": false },
         { "path": "../../engspace/packages/server-db", "prepend": false },
         { "path": "../../engspace/packages/server-api", "prepend": false }

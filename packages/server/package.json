@@ -8,6 +8,7 @@
         "@engspace/core": "link:./../../engspace/packages/core",
         "@engspace/server-api": "link:./../../engspace/packages/server-api",
         "@engspace/server-db": "link:./../../engspace/packages/server-db",
+        "@ohp/core": "link:./../core",
         "@koa/router": "^9.3.1",
         "koa": "^2.13.0",
         "koa-helmet": "^5.2.0",
@@ -33,6 +34,7 @@
         "typescript": "^3.9.6"
     },
     "main": "dist/index",
+    "repository": "https://github.com/engspace/ohp",
     "scripts": {
         "build": "tsc -b .",
         "clean": "rimraf ./dist/ ../../.build-cache/demo-server.tsbuildinfo",

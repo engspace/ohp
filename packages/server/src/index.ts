@@ -12,6 +12,7 @@ import {
     checkTokenMiddleware,
     graphQLMiddleware,
     buildEsSchema,
+    StaticEsNaming,
 } from '@engspace/server-api';
 import {
     buildDaoSet,
@@ -71,10 +72,10 @@ const config = {
     pool,
     dao,
     control,
-    naming: {
+    naming: new StaticEsNaming({
         partRef: new PartRefNaming('${fam_code}${fam_count:5}${part_version:AA}'),
         changeRequest: new ChangeRequestNaming('CR-${counter:5}'),
-    },
+    }),
 };
 
 prepareDb(dbPreparationConfig)

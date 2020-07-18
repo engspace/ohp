@@ -1,8 +1,18 @@
-import events from 'events';
+import Router from '@koa/router';
 import Koa from 'koa';
+import helmet from 'koa-helmet';
 import logger from 'koa-logger';
 import { buildDefaultAppRolePolicies, PartRefNaming, ChangeRequestNaming } from '@engspace/core';
-import { buildControllerSet, EsServerApi } from '@engspace/server-api';
+import {
+    buildControllerSet,
+    bodyParserMiddleware,
+    corsMiddleware,
+    checkAuthMiddleware,
+    passwordLoginMiddleware,
+    checkTokenMiddleware,
+    graphQLMiddleware,
+    buildEsSchema,
+} from '@engspace/server-api';
 import {
     buildDaoSet,
     connectionString,
@@ -16,9 +26,7 @@ import {
     ServerConnConfig,
 } from '@engspace/server-db';
 
-events.EventEmitter.defaultMaxListeners = 100;
-
-const config = {
+const envConfig = {
     dbHost: process.env.DB_HOST,
     dbPort: process.env.DB_PORT,
     dbUser: process.env.DB_USER,
@@ -29,15 +37,15 @@ const config = {
 };
 
 const serverConnConfig: ServerConnConfig = {
-    host: config.dbHost,
-    port: config.dbPort,
-    user: config.dbUser,
-    pass: config.dbPass,
+    host: envConfig.dbHost,
+    port: envConfig.dbPort,
+    user: envConfig.dbUser,
+    pass: envConfig.dbPass,
 };
 
 const dbConnConfig: DbConnConfig = {
     ...serverConnConfig,
-    name: config.dbName,
+    name: envConfig.dbName,
 };
 
 const dbPreparationConfig: DbPreparationConfig = {
@@ -53,15 +61,28 @@ const dbPoolConfig: DbPoolConfig = {
     },
 };
 
+const rolePolicies = buildDefaultAppRolePolicies();
 const pool: DbPool = createDbPool(dbPoolConfig);
-export const dao = buildDaoSet();
+const dao = buildDaoSet();
+const control = buildControllerSet(dao);
+const config = {
+    rolePolicies,
+    storePath: envConfig.storePath,
+    pool,
+    dao,
+    control,
+    naming: {
+        partRef: new PartRefNaming('${fam_code}${fam_count:5}${part_version:AA}'),
+        changeRequest: new ChangeRequestNaming('CR-${counter:5}'),
+    },
+};
 
 prepareDb(dbPreparationConfig)
     .then(async () => {
-        await pool.transaction((db) => initSchema(db));
-        const api = buildServerApi(pool);
-        api.koa.listen(config.serverPort, () => {
-            console.log(`Demo API listening to port ${config.serverPort}`);
+        await pool.transaction((db) => initSchema(db, dao));
+        const app = buildServerApp();
+        app.listen(envConfig.serverPort, () => {
+            console.log(`Demo API listening to port ${envConfig.serverPort}`);
         });
     })
     .catch((err) => {
@@ -69,27 +90,29 @@ prepareDb(dbPreparationConfig)
         console.error(err);
     });
 
-function buildServerApi(pool: DbPool): EsServerApi {
-    const rolePolicies = buildDefaultAppRolePolicies();
-    const control = buildControllerSet(dao);
+function buildServerApp(): Koa {
+    const app = new Koa();
 
-    const api = new EsServerApi(new Koa(), {
-        pool,
-        rolePolicies,
-        storePath: config.storePath,
-        control,
-        dao,
-        cors: true,
-        naming: {
-            partRef: new PartRefNaming('${fam_code}${fam_count:4}${part_version:AA}'),
-            changeRequest: new ChangeRequestNaming('$CR-${counter:4}'),
-        },
-    });
-    api.koa.use(logger());
+    app.use(helmet());
+    app.use(bodyParserMiddleware);
+    app.use(corsMiddleware);
+    app.use(logger());
+    app.use(checkAuthMiddleware);
 
-    api.setupPlayground();
-    api.setupAuthAndHttpRoutes('/api');
-    api.setupGqlEndpoint('/api/graphql');
+    const login = passwordLoginMiddleware(config);
 
-    return api;
+    const router = new Router({ prefix: '/api' });
+    router.get('/check_token', checkTokenMiddleware);
+    router.post('/login', login);
+    app.use(router.routes());
+
+    const gql = {
+        path: '/api/graphql',
+        schema: buildEsSchema(control),
+        logging: true,
+    };
+
+    app.use(graphQLMiddleware(gql, config));
+
+    return app;
 }

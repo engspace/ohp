@@ -43,7 +43,7 @@ function mapRow({ id, organizationId, name, code, description }: Row): Project {
     };
 }
 
-const rowToken = sql`id, code, name, description`;
+const rowToken = sql`id, organization_id, code, name, description`;
 
 export class OhpProjectDao extends ProjectDao {
     constructor(config: Partial<DaoBaseConfig<Project, Row>> = {}) {
@@ -55,6 +55,7 @@ export class OhpProjectDao extends ProjectDao {
             ...config,
         });
     }
+
     async create(db: Db, proj: ProjectInput): Promise<Project> {
         const { organizationId, code, name, description } = proj;
         const row: Row = await db.one(sql`

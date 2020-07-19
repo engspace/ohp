@@ -4,18 +4,15 @@ import helmet from 'koa-helmet';
 import logger from 'koa-logger';
 import { buildDefaultAppRolePolicies, PartRefNaming, ChangeRequestNaming } from '@engspace/core';
 import {
-    buildControllerSet,
     bodyParserMiddleware,
     corsMiddleware,
     checkAuthMiddleware,
     passwordLoginMiddleware,
     checkTokenMiddleware,
     graphQLMiddleware,
-    buildEsSchema,
     StaticEsNaming,
 } from '@engspace/server-api';
 import {
-    buildDaoSet,
     connectionString,
     createDbPool,
     DbConnConfig,
@@ -26,6 +23,9 @@ import {
     prepareDb,
     ServerConnConfig,
 } from '@engspace/server-db';
+import { buildOhpControllerSet } from './control';
+import { buildOhpDaoSet } from './dao';
+import { buildOhpGqlSchema } from './graphql';
 
 const envConfig = {
     dbHost: process.env.DB_HOST,
@@ -64,8 +64,8 @@ const dbPoolConfig: DbPoolConfig = {
 
 const rolePolicies = buildDefaultAppRolePolicies();
 const pool: DbPool = createDbPool(dbPoolConfig);
-const dao = buildDaoSet();
-const control = buildControllerSet(dao);
+const dao = buildOhpDaoSet();
+const control = buildOhpControllerSet(dao);
 const config = {
     rolePolicies,
     storePath: envConfig.storePath,
@@ -100,16 +100,13 @@ function buildServerApp(): Koa {
     app.use(logger());
     app.use(checkAuthMiddleware);
 
-    const login = passwordLoginMiddleware(config);
-
     const router = new Router({ prefix: '/api' });
     router.get('/check_token', checkTokenMiddleware);
-    router.post('/login', login);
     app.use(router.routes());
 
     const gql = {
         path: '/api/graphql',
-        schema: buildEsSchema(control),
+        schema: buildOhpGqlSchema(control),
         logging: true,
     };
 

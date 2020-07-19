@@ -27,8 +27,8 @@
     "scripts": {
         "build": "tsc -b .",
         "clean": "rimraf ./dist/ ../../.build-cache/core.tsbuildinfo",
-        "lint": "eslint --ext .ts src test",
-        "lint:fix": "eslint --fix --ext .ts src test"
+        "lint": "eslint --ext .ts src",
+        "lint:fix": "eslint --fix --ext .ts src"
     },
     "types": "dist/index"
 }

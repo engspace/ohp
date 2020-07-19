@@ -1,4 +1,16 @@
-import { Id } from '@engspace/core';
+import { Id, IdOr, User } from '@engspace/core';
+
+export enum AccountType {
+    Local = 'LOCAL',
+    Google = 'GOOGLE',
+}
+
+export interface Account {
+    id: Id;
+    type: AccountType;
+    user?: IdOr<User>;
+    email: string;
+}
 
 export interface Organization {
     id: Id;

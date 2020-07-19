@@ -1150,6 +1150,11 @@
     "@types/koa" "*"
     graphql "^14.5.3"
 
+"@types/grecaptcha@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@types/grecaptcha/-/grecaptcha-3.0.1.tgz#359c46be0baeac15ae4021f002d1c0c9374ae3e4"
+  integrity sha512-eMA/2quQoxwSe8oOBB1H6KNXNqginzt9BHAt2vVVUoQswZNct2QwSAmEMsN/VHj/XSNxM3p+Py15B7omEaAC9w==
+
 "@types/helmet@*":
   version "0.0.47"
   resolved "https://registry.yarnpkg.com/@types/helmet/-/helmet-0.0.47.tgz#ec5161541b649142205b7c558bca14801c5ce129"
@@ -1291,6 +1296,11 @@
   dependencies:
     "@types/express-serve-static-core" "*"
     "@types/mime" "*"
+
+"@types/validator@^13.1.0":
+  version "13.1.0"
+  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.1.0.tgz#3d776127dbce7dd31fc06f86d3428b072e631eba"
+  integrity sha512-gHUHI6pJaANIO2r6WcbT7+WMgbL9GZooR4tWpuBOETpDIqFNxwaJluE+6rj6VGYe8k6OkfhbHz2Fkm8kl06Igw==
 
 "@types/webpack-env@^1.15.2":
   version "1.15.2"

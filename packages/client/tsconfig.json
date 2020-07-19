@@ -11,7 +11,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "types": [
-      "webpack-env", "gapi", "gapi.auth2", "vuetify"
+      "webpack-env", "gapi", "gapi.auth2", "grecaptcha", "vuetify"
     ],
     "paths": {
       "@/*": [

@@ -20,24 +20,24 @@
         <v-row align="center" justify="center">
             <v-col cols="12" sm="8" md="4">
                 <v-card>
-                    <v-toolbar dark color="primary" flat>
+                    <v-toolbar dark color="secondary" flat>
                         <v-toolbar-title>
-                            Sign-in with e-mail and password
+                            Register with e-mail and password
                         </v-toolbar-title>
                     </v-toolbar>
                     <v-card-text>
-                        <v-form v-model="canSignIn">
+                        <v-form v-model="canRegister">
                             <v-text-field
                                 v-model="email"
                                 prepend-icon="mdi-at"
                                 label="E-mail"
-                                :rules="[required]"
+                                :rules="[required, isEmail]"
                                 dense
                             ></v-text-field>
                             <v-text-field
                                 v-model="password"
                                 label="Password"
-                                :rules="[required, isEmail]"
+                                :rules="[required]"
                                 prepend-icon="mdi-lock"
                                 :append-icon="
                                     showPswd ? 'mdi-eye' : 'mdi-eye-off'
@@ -46,18 +46,24 @@
                                 dense
                                 @click:append="showPswd = !showPswd"
                             ></v-text-field>
+                            <div class="text-center mt-5">
+                                <div
+                                    class="g-recaptcha d-inline-block"
+                                    :data-sitekey="recaptchaSiteKey"
+                                ></div>
+                            </div>
                         </v-form>
                     </v-card-text>
                     <v-card-actions>
                         <v-btn
-                            color="primary"
-                            :disabled="!canSignIn"
-                            @click="signIn"
-                            >Sign-in</v-btn
+                            color="secondary"
+                            :disabled="!canRegister"
+                            @click="register"
+                            >Register</v-btn
                         >
                         <v-spacer></v-spacer>
-                        <v-subheader>Not registered yet?</v-subheader>
-                        <v-btn to="/register" color="secondary">Register</v-btn>
+                        <v-subheader>Already registered?</v-subheader>
+                        <v-btn to="/login" color="primary">Login</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-col>
@@ -68,7 +74,11 @@
 <script lang="ts">
 import { defineComponent, ref } from '@vue/composition-api';
 import validator from 'validator';
-import { GoogleUser, useGoogleSignIn } from '@/services/google';
+import {
+    GoogleUser,
+    useGoogleSignIn,
+    useGoogleRecaptchaV2,
+} from '@/services/google';
 
 export default defineComponent({
     setup() {
@@ -88,12 +98,15 @@ export default defineComponent({
         const password = ref('');
         const showPswd = ref(false);
 
-        const canSignIn = ref(false);
+        const canRegister = ref(false);
         const required = (val: string) => !!val || 'Required';
         const isEmail = (val: string) =>
             (!!val && validator.isEmail(val)) || 'Enter a valid e-mail address';
 
-        function signIn() {
+        const recaptchaSiteKey = process.env.VUE_APP_GOOGLE_RECAPTCHA_SITE_KEY;
+        const { getResponse } = useGoogleRecaptchaV2();
+
+        function register() {
             // TODO
         }
 
@@ -102,10 +115,11 @@ export default defineComponent({
             email,
             password,
             showPswd,
-            canSignIn,
+            canRegister,
             required,
             isEmail,
-            signIn,
+            recaptchaSiteKey,
+            register,
         };
     },
 });

@@ -2,15 +2,19 @@ import Router from '@koa/router';
 import Koa from 'koa';
 import helmet from 'koa-helmet';
 import logger from 'koa-logger';
-import { buildDefaultAppRolePolicies, PartRefNaming, ChangeRequestNaming } from '@engspace/core';
+import {
+    buildDefaultAppRolePolicies,
+    PartRefNaming,
+    ChangeRequestNaming,
+    buildAppRolePolicies,
+} from '@engspace/core';
 import {
     bodyParserMiddleware,
     corsMiddleware,
-    checkAuthMiddleware,
-    passwordLoginMiddleware,
-    checkTokenMiddleware,
-    graphQLMiddleware,
+    checkTokenEndpoint,
+    graphQLEndpoint,
     StaticEsNaming,
+    checkAuthOrDefaultMiddleware,
 } from '@engspace/server-api';
 import {
     connectionString,
@@ -19,13 +23,17 @@ import {
     DbPool,
     DbPoolConfig,
     DbPreparationConfig,
-    initSchema,
+    syncSchema,
     prepareDb,
     ServerConnConfig,
 } from '@engspace/server-db';
 import { buildOhpControllerSet } from './control';
 import { buildOhpDaoSet } from './dao';
 import { buildOhpGqlSchema } from './graphql';
+import ohpMigrations from './migrations';
+import roleDescriptors from './permissions';
+
+export const ohpDbSchemaLevel = 1;
 
 const envConfig = {
     dbHost: process.env.DB_HOST,
@@ -33,6 +41,7 @@ const envConfig = {
     dbUser: process.env.DB_USER,
     dbPass: process.env.DB_PASS,
     dbName: process.env.DB_NAME,
+    dbFormat: process.env.DB_FORMAT,
     serverPort: process.env.SERVER_PORT,
     storePath: process.env.STORE_PATH,
 };
@@ -52,7 +61,7 @@ const dbConnConfig: DbConnConfig = {
 const dbPreparationConfig: DbPreparationConfig = {
     serverConnString: connectionString(serverConnConfig),
     name: dbConnConfig.name,
-    formatDb: false,
+    formatDb: envConfig.dbFormat === 'format',
 };
 
 const dbPoolConfig: DbPoolConfig = {
@@ -62,7 +71,7 @@ const dbPoolConfig: DbPoolConfig = {
     },
 };
 
-const rolePolicies = buildDefaultAppRolePolicies();
+const rolePolicies = buildAppRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
 const control = buildOhpControllerSet(dao);
@@ -80,7 +89,7 @@ const config = {
 
 prepareDb(dbPreparationConfig)
     .then(async () => {
-        await pool.transaction((db) => initSchema(db, dao));
+        await pool.transaction((db) => syncSchema(db, ohpDbSchemaLevel, ohpMigrations));
         const app = buildServerApp();
         app.listen(envConfig.serverPort, () => {
             console.log(`Demo API listening to port ${envConfig.serverPort}`);
@@ -94,14 +103,19 @@ prepareDb(dbPreparationConfig)
 function buildServerApp(): Koa {
     const app = new Koa();
 
-    app.use(helmet());
+    // app.use(helmet());
     app.use(bodyParserMiddleware);
     app.use(corsMiddleware);
     app.use(logger());
-    app.use(checkAuthMiddleware);
+    app.use(
+        checkAuthOrDefaultMiddleware({
+            userId: '',
+            userPerms: config.rolePolicies.user.permissions([]),
+        })
+    );
 
     const router = new Router({ prefix: '/api' });
-    router.get('/check_token', checkTokenMiddleware);
+    router.get('/check_token', checkTokenEndpoint);
     app.use(router.routes());
 
     const gql = {
@@ -110,7 +124,7 @@ function buildServerApp(): Koa {
         logging: true,
     };
 
-    app.use(graphQLMiddleware(gql, config));
+    app.use(graphQLEndpoint(gql, config));
 
     return app;
 }

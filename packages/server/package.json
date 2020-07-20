@@ -11,6 +11,7 @@
         "@koa/router": "^9.3.1",
         "@ohp/core": "link:./../core",
         "apollo-server-koa": "^2.16.0",
+        "axios": "^0.19.2",
         "graphql": "^15.3.0",
         "koa": "^2.13.0",
         "koa-helmet": "^5.2.0",
@@ -20,6 +21,7 @@
     "devDependencies": {
         "@engspace/eslint-config": "link:./../../engspace/packages/eslint-config",
         "@engspace/prettier-config": "link:./../../engspace/packages/prettier-config",
+        "@types/axios": "^0.14.0",
         "@types/koa": "^2.11.3",
         "@types/koa-helmet": "^5.2.0",
         "@types/koa__router": "^8.0.2",

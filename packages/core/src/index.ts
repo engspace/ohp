@@ -8,8 +8,8 @@ export enum AccountType {
 export interface Account {
     id: Id;
     type: AccountType;
-    user?: IdOr<User>;
-    email: string;
+    active: boolean;
+    user: IdOr<User>;
 }
 
 export interface Organization {

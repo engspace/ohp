@@ -4,18 +4,6 @@ import { Organization } from '@ohp/core';
 
 const table = 'organization';
 
-const dependencies = [];
-
-const schema = [
-    sql`
-        CREATE TABLE organization (
-            id serial PRIMARY KEY,
-            name text NOT NULL,
-            description text NOT NULL
-        )
-    `,
-];
-
 interface Row {
     id: RowId;
     name: string;
@@ -42,8 +30,6 @@ export interface Input {
 export class OrganizationDao extends DaoBase<Organization, Row> {
     constructor(config: Partial<DaoBaseConfig<Organization, Row>> = {}) {
         super(table, {
-            dependencies,
-            schema,
             rowToken,
             mapRow,
             ...config,

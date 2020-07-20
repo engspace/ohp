@@ -1,0 +1,4 @@
+{
+    "watch": ["src", "../../engspace/server-api/src", "../../engspace/server-db/src"],
+    "ext": "ts,html,json"
+}

@@ -48,8 +48,6 @@ const rowToken = sql`id, organization_id, code, name, description`;
 export class OhpProjectDao extends ProjectDao {
     constructor(config: Partial<DaoBaseConfig<Project, Row>> = {}) {
         super({
-            dependencies,
-            schema,
             rowToken,
             mapRow,
             ...config,

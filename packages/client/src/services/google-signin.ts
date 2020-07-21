@@ -87,34 +87,3 @@ export function useGoogleSignIn({
 
     return { isSignedIn, signIn, signOut, renderBtn, onSuccess, onError };
 }
-
-export function useGoogleRecaptchaV2() {
-    let loadCb: () => void;
-    function onLoad(cb: () => void) {
-        loadCb = cb;
-    }
-
-    function render(containerId: string, parameters: any): number {
-        return grecaptcha.render(containerId, parameters);
-    }
-
-    function reset(widgetId?: number) {
-        grecaptcha.reset(widgetId);
-    }
-
-    function getResponse(widgetId?: number) {
-        return grecaptcha.getResponse(widgetId);
-    }
-
-    onMounted(async () => {
-        await useScript({
-            src: 'https://www.google.com/recaptcha/api.js',
-            defer: true,
-        });
-        if (loadCb) {
-            loadCb();
-        }
-    });
-
-    return { onLoad, render, reset, getResponse };
-}

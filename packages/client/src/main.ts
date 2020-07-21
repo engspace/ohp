@@ -4,7 +4,7 @@ import App from './App.vue';
 import { provideApollo } from './apollo';
 import router from './router';
 import { provideAuth } from './services/auth';
-import { provideGoogleSignIn } from './services/google';
+import { provideGoogleSignIn } from './services/google-signin';
 import { vuetify } from './vuetify';
 
 Vue.use(VueCompositionApi);

@@ -26,7 +26,7 @@
                         </v-toolbar-title>
                     </v-toolbar>
                     <v-card-text>
-                        <v-form v-model="canRegister">
+                        <v-form v-model="formValid">
                             <v-text-field
                                 v-model="name"
                                 prepend-icon="mdi-account"
@@ -61,8 +61,8 @@
                             ></v-text-field>
                             <div class="text-center mt-5">
                                 <div
-                                    class="g-recaptcha d-inline-block"
-                                    :data-sitekey="recaptchaSiteKey"
+                                    id="grecaptcha-element"
+                                    class="d-inline-block"
                                 ></div>
                             </div>
                         </v-form>
@@ -75,7 +75,7 @@
                     </v-card-text>
                     <v-card-actions>
                         <v-btn
-                            color="secondary"
+                            color="success"
                             :disabled="!canRegister"
                             @click="register"
                             >Register</v-btn
@@ -96,11 +96,8 @@ import { computed, defineComponent, ref } from '@vue/composition-api';
 import gql from 'graphql-tag';
 import validator from 'validator';
 import { USER_FIELDS, useUserConflicts } from '@engspace/client-comps';
-import {
-    GoogleUser,
-    useGoogleSignIn,
-    useGoogleRecaptchaV2,
-} from '@/services/google';
+import { useGoogleRecaptchaV2 } from '@/services/google-recaptcha';
+import { GoogleUser, useGoogleSignIn } from '@/services/google-signin';
 
 const ACCOUNT_FIELDS = gql`
     fragment AccountFields on Account {
@@ -115,7 +112,6 @@ const ACCOUNT_FIELDS = gql`
 
 export default defineComponent({
     setup() {
-        console.log('in setup');
         const {
             signIn: googleSignIn,
             onSuccess: googleOnSuccess,
@@ -128,15 +124,13 @@ export default defineComponent({
             // TODO
         });
 
-        console.log('in setup 1');
         const name = ref('');
         const fullName = ref('');
         const email = ref('');
         const password = ref('');
         const showPswd = ref(false);
-        console.log('in setup 2');
 
-        const canRegister = ref(false);
+        const formValid = ref(false);
         const required = (val: string) => !!val || 'Required';
         const isEmail = (val: string) =>
             (!!val && validator.isEmail(val)) || 'Enter a valid e-mail address';
@@ -144,7 +138,6 @@ export default defineComponent({
             email: email.value,
             name: name.value,
         }));
-        console.log('in setup 3');
         const {
             name: nameConflict,
             email: emailConflict,
@@ -153,7 +146,6 @@ export default defineComponent({
         } = useUserConflicts({
             user,
         });
-        console.log('in setup 4');
         const nameConflictErrorMsg = computed(() => {
             if (name.value && nameConflict.value) {
                 return `${name} already exists in the database`;
@@ -168,8 +160,14 @@ export default defineComponent({
             return '';
         });
 
-        const recaptchaSiteKey = process.env.VUE_APP_GOOGLE_RECAPTCHA_SITE_KEY;
-        const { getResponse: getRecaptchaResponse } = useGoogleRecaptchaV2();
+        const { response: recaptchaResponse } = useGoogleRecaptchaV2({
+            target: 'grecaptcha-element',
+            siteKey: process.env.VUE_APP_GOOGLE_RECAPTCHA_SITE_KEY as string,
+        });
+
+        const canRegister = computed(
+            () => formValid.value && !!recaptchaResponse.value
+        );
 
         const {
             mutate: registerMutate,
@@ -190,7 +188,7 @@ export default defineComponent({
         const recaptchaError = ref('');
 
         const displayedError = computed(
-            () => /*registerError.value?.message || */ recaptchaError.value
+            () => registerError.value?.message || recaptchaError.value
         );
 
         const confirmation = ref('');
@@ -198,7 +196,7 @@ export default defineComponent({
         function register() {
             confirmation.value = '';
             recaptchaError.value = '';
-            const rr = getRecaptchaResponse();
+            const rr = recaptchaResponse.value;
             if (!rr) {
                 recaptchaError.value = 'You must be identified as a human';
                 return;
@@ -217,11 +215,14 @@ export default defineComponent({
         registerOnDone(() => {
             recaptchaError.value = '';
             confirmation.value =
-                'Your account has been registered but is still inactive\n' +
+                'Your account has been registered but is still inactive. ' +
                 'An activation link was sent to ' +
                 email.value;
+            name.value = '';
+            email.value = '';
+            fullName.value = '';
+            password.value = '';
         });
-        console.log('out setup');
 
         return {
             googleSignIn,
@@ -230,12 +231,12 @@ export default defineComponent({
             email,
             password,
             showPswd,
+            formValid,
             canRegister,
             required,
             isEmail,
             nameConflictErrorMsg,
             emailConflictErrorMsg,
-            recaptchaSiteKey,
             register,
             registerLoading,
             confirmation,

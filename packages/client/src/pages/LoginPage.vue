@@ -68,7 +68,7 @@
 <script lang="ts">
 import { defineComponent, ref } from '@vue/composition-api';
 import validator from 'validator';
-import { GoogleUser, useGoogleSignIn } from '@/services/google';
+import { GoogleUser, useGoogleSignIn } from '@/services/google-signin';
 
 export default defineComponent({
     setup() {

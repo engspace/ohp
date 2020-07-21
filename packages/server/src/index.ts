@@ -51,7 +51,7 @@ const dbConnConfig: DbConnConfig = {
 const dbPreparationConfig: DbPreparationConfig = {
     serverConnString: connectionString(serverConnConfig),
     name: dbConnConfig.name,
-    formatDb: env.dbFormat === 'format',
+    formatDb: env.dbFormat === 'Yes_Im_Sure',
 };
 
 const dbPoolConfig: DbPoolConfig = {

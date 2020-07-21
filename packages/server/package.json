@@ -12,6 +12,7 @@
         "@ohp/core": "link:./../core",
         "apollo-server-koa": "^2.16.0",
         "axios": "^0.19.2",
+        "google-auth-library": "^6.0.5",
         "graphql": "^15.3.0",
         "koa": "^2.13.0",
         "koa-helmet": "^5.2.0",

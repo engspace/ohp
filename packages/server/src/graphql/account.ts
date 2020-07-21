@@ -2,7 +2,7 @@ import { IResolvers } from 'apollo-server-koa';
 import gql from 'graphql-tag';
 import { User } from '@engspace/core';
 import { GqlContext } from '@engspace/server-api';
-import { Account } from '@ohp/core';
+import { Account, SigninResult } from '@ohp/core';
 import { OhpControllerSet } from '../control';
 
 export interface LocalAccountInput {
@@ -11,6 +11,10 @@ export interface LocalAccountInput {
     fullName: string;
     password: string;
     recaptchaToken: string;
+}
+
+export interface GoogleSigninInput {
+    idToken: string;
 }
 
 export default {
@@ -25,6 +29,13 @@ export default {
             type: AccountType!
             active: Boolean!
             user: User!
+            registered: DateTime!
+            lastSignin: DateTime
+        }
+
+        type SigninResult {
+            bearerToken: String!
+            account: Account!
         }
 
         input LocalAccountInput {
@@ -35,12 +46,17 @@ export default {
             recaptchaToken: String!
         }
 
+        input GoogleSigninInput {
+            idToken: String!
+        }
+
         extend type User {
             account: Account
         }
 
         extend type Mutation {
             accountCreateLocal(input: LocalAccountInput!): Account!
+            accountGoogleSignin(input: GoogleSigninInput!): SigninResult!
         }
     `,
 
@@ -58,6 +74,13 @@ export default {
                     ctx: GqlContext
                 ): Promise<Account> {
                     return control.account.createLocal(ctx, input);
+                },
+                accountGoogleSignin(
+                    parent,
+                    { input }: { input: GoogleSigninInput },
+                    ctx: GqlContext
+                ): Promise<SigninResult> {
+                    return control.account.googleSignin(ctx, input);
                 },
             },
         };

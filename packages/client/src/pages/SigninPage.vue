@@ -1,24 +1,12 @@
 <template>
-    <v-container fluid>
+    <v-container>
         <v-row align="center" justify="center" class="ma-12">
-            <v-col cols="12" sm="8" md="4">
-                <v-card>
-                    <v-toolbar dark color="primary" flat>
-                        <v-toolbar-title>
-                            Sign-in or register with provider
-                        </v-toolbar-title>
-                    </v-toolbar>
-                    <v-card-text class="text-center">
-                        <v-btn @click="googleSignIn">
-                            <v-icon left>mdi-google</v-icon>
-                            Google
-                        </v-btn>
-                    </v-card-text>
-                </v-card>
+            <v-col cols="12" sm="8" md="4" lg="3">
+                <provider-signin-card></provider-signin-card>
             </v-col>
         </v-row>
         <v-row align="center" justify="center">
-            <v-col cols="12" sm="8" md="4">
+            <v-col cols="12" sm="8" md="4" lg="3">
                 <v-card>
                     <v-toolbar dark color="primary" flat>
                         <v-toolbar-title>
@@ -68,22 +56,13 @@
 <script lang="ts">
 import { defineComponent, ref } from '@vue/composition-api';
 import validator from 'validator';
-import { GoogleUser, useGoogleSignIn } from '@/services/google-signin';
+import ProviderSigninCard from '@/components/ProviderSigninCard';
 
 export default defineComponent({
+    components: {
+        ProviderSigninCard,
+    },
     setup() {
-        const {
-            signIn: googleSignIn,
-            onSuccess: googleOnSuccess,
-            onError: googleOnError,
-        } = useGoogleSignIn();
-        googleOnSuccess((usr: GoogleUser) => {
-            // TODO
-        });
-        googleOnError((err: { error: string }) => {
-            // TODO
-        });
-
         const email = ref('');
         const password = ref('');
         const showPswd = ref(false);
@@ -98,7 +77,6 @@ export default defineComponent({
         }
 
         return {
-            googleSignIn,
             email,
             password,
             showPswd,

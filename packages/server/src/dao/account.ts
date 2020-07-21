@@ -1,8 +1,7 @@
 import { sql } from 'slonik';
 import { Id } from '@engspace/core';
-import { RowId, toId, foreignKey, DaoBase, Db } from '@engspace/server-db';
-import { AccountType } from '@ohp/core';
-import { VerifiableAccount } from '../control/account';
+import { RowId, toId, foreignKey, DaoBase, Db, timestamp } from '@engspace/server-db';
+import { Account, AccountType, Provider } from '@ohp/core';
 
 const table = 'account';
 interface Row {
@@ -10,21 +9,25 @@ interface Row {
     typeId: string;
     active: number;
     userId: RowId;
-    verif: string;
+    registered: number;
+    lastSignin?: number;
 }
 
-function mapRow({ id, typeId, active, userId, verif }: Row): VerifiableAccount {
+function mapRow({ id, typeId, active, userId, registered, lastSignin }: Row): Account {
     return {
         id: toId(id),
         active: active !== 0,
         type: typeId as AccountType,
         user: foreignKey(userId),
-        verif,
+        registered: timestamp(registered),
+        lastSignin: timestamp(lastSignin),
     };
 }
 
 const rowToken = sql`
-    id, type_id, active, user_id, verif
+    id, type_id, active, user_id,
+    EXTRACT(EPOCH FROM registered) AS registered,
+    EXTRACT(EPOCH FROM last_signin) AS last_signin
 `;
 
 export interface LocalInput {
@@ -32,7 +35,13 @@ export interface LocalInput {
     password: string;
 }
 
-export class AccountDao extends DaoBase<VerifiableAccount, Row> {
+export interface ProviderInput {
+    provider: Provider;
+    userId: Id;
+    providerId: Id;
+}
+
+export class AccountDao extends DaoBase<Account, Row> {
     constructor() {
         super(table, {
             mapRow,
@@ -40,22 +49,57 @@ export class AccountDao extends DaoBase<VerifiableAccount, Row> {
         });
     }
 
-    async createLocal(db: Db, { userId, password }: LocalInput): Promise<VerifiableAccount> {
+    async createLocal(db: Db, { userId, password }: LocalInput): Promise<Account> {
         const row: Row = await db.one(sql`
             INSERT INTO account (
                 type_id,
                 active,
                 user_id,
-                verif
+                password,
+                registered
             )
             VALUES (
                 ${AccountType.Local},
                 FALSE,
                 ${userId},
-                CRYPT(${password}, GEN_SALT('bf'))
+                CRYPT(${password}, GEN_SALT('bf')),
+                NOW()
             )
             RETURNING ${rowToken}
         `);
         return mapRow(row);
+    }
+
+    async createProvider(
+        db: Db,
+        { provider, userId, providerId }: ProviderInput
+    ): Promise<Account> {
+        const row = await db.one(sql`
+            INSERT INTO account (
+                type_id,
+                active,
+                user_id,
+                provider_id,
+                registered,
+                last_signin
+            )
+            VALUES (
+                ${provider},
+                TRUE,
+                ${userId},
+                ${providerId},
+                NOW(),
+                NOW()
+            )
+            RETURNING ${rowToken}
+        `);
+        return mapRow(row);
+    }
+
+    async byProviderId(db: Db, providerId: string): Promise<Account | null> {
+        const row: Row | null = await db.maybeOne(sql`
+            SELECT ${rowToken} FROM account WHERE provider_id = ${providerId}
+        `);
+        return row ? mapRow(row) : null;
     }
 }

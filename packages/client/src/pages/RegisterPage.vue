@@ -1,24 +1,12 @@
 <template>
     <v-container fluid>
         <v-row align="center" justify="center" class="ma-12">
-            <v-col cols="12" sm="8" md="4">
-                <v-card>
-                    <v-toolbar dark color="primary" flat>
-                        <v-toolbar-title>
-                            Sign-in or register with provider
-                        </v-toolbar-title>
-                    </v-toolbar>
-                    <v-card-text class="text-center">
-                        <v-btn @click="googleSignIn">
-                            <v-icon left>mdi-google</v-icon>
-                            Google
-                        </v-btn>
-                    </v-card-text>
-                </v-card>
+            <v-col cols="12" sm="8" md="5" xl="3">
+                <provider-signin-card></provider-signin-card>
             </v-col>
         </v-row>
         <v-row align="center" justify="center">
-            <v-col cols="12" sm="8" md="4">
+            <v-col cols="12" sm="8" md="5" xl="3">
                 <v-card :loading="registerLoading">
                     <v-toolbar dark color="secondary" flat>
                         <v-toolbar-title>
@@ -30,7 +18,7 @@
                             <v-text-field
                                 v-model="name"
                                 prepend-icon="mdi-account"
-                                label="Nickname"
+                                label="Pseudo"
                                 :rules="[required]"
                                 dense
                             ></v-text-field>
@@ -82,7 +70,7 @@
                         >
                         <v-spacer></v-spacer>
                         <v-subheader>Already registered?</v-subheader>
-                        <v-btn to="/login" color="primary">Login</v-btn>
+                        <v-btn to="/signin" color="primary">Sign-in</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-col>
@@ -95,35 +83,16 @@ import { useMutation } from '@vue/apollo-composable';
 import { computed, defineComponent, ref } from '@vue/composition-api';
 import gql from 'graphql-tag';
 import validator from 'validator';
-import { USER_FIELDS, useUserConflicts } from '@engspace/client-comps';
+import { useUserConflicts } from '@engspace/client-comps';
+import ProviderSigninCard from '@/components/ProviderSigninCard.vue';
+import { ACCOUNT_FIELDS } from '@/graphql';
 import { useGoogleRecaptchaV2 } from '@/services/google-recaptcha';
-import { GoogleUser, useGoogleSignIn } from '@/services/google-signin';
-
-const ACCOUNT_FIELDS = gql`
-    fragment AccountFields on Account {
-        id
-        type
-        user {
-            ...UserFields
-        }
-    }
-    ${USER_FIELDS}
-`;
 
 export default defineComponent({
+    components: {
+        ProviderSigninCard,
+    },
     setup() {
-        const {
-            signIn: googleSignIn,
-            onSuccess: googleOnSuccess,
-            onError: googleOnError,
-        } = useGoogleSignIn();
-        googleOnSuccess((usr: GoogleUser) => {
-            // TODO
-        });
-        googleOnError((err: { error: string }) => {
-            // TODO
-        });
-
         const name = ref('');
         const fullName = ref('');
         const email = ref('');
@@ -225,7 +194,6 @@ export default defineComponent({
         });
 
         return {
-            googleSignIn,
             name,
             fullName,
             email,

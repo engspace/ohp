@@ -29,39 +29,29 @@ import {
 } from '@engspace/server-db';
 import { buildOhpControllerSet } from './control';
 import { buildOhpDaoSet } from './dao';
+import env from './env';
 import { buildOhpGqlSchema } from './graphql';
 import ohpMigrations from './migrations';
 import roleDescriptors from './permissions';
 
 export const ohpDbSchemaLevel = 1;
 
-const envConfig = {
-    dbHost: process.env.DB_HOST,
-    dbPort: process.env.DB_PORT,
-    dbUser: process.env.DB_USER,
-    dbPass: process.env.DB_PASS,
-    dbName: process.env.DB_NAME,
-    dbFormat: process.env.DB_FORMAT,
-    serverPort: process.env.SERVER_PORT,
-    storePath: process.env.STORE_PATH,
-};
-
 const serverConnConfig: ServerConnConfig = {
-    host: envConfig.dbHost,
-    port: envConfig.dbPort,
-    user: envConfig.dbUser,
-    pass: envConfig.dbPass,
+    host: env.dbHost,
+    port: env.dbPort,
+    user: env.dbUser,
+    pass: env.dbPass,
 };
 
 const dbConnConfig: DbConnConfig = {
     ...serverConnConfig,
-    name: envConfig.dbName,
+    name: env.dbName,
 };
 
 const dbPreparationConfig: DbPreparationConfig = {
     serverConnString: connectionString(serverConnConfig),
     name: dbConnConfig.name,
-    formatDb: envConfig.dbFormat === 'format',
+    formatDb: env.dbFormat === 'format',
 };
 
 const dbPoolConfig: DbPoolConfig = {
@@ -77,7 +67,7 @@ const dao = buildOhpDaoSet();
 const control = buildOhpControllerSet(dao);
 const config = {
     rolePolicies,
-    storePath: envConfig.storePath,
+    storePath: env.storePath,
     pool,
     dao,
     control,
@@ -91,8 +81,8 @@ prepareDb(dbPreparationConfig)
     .then(async () => {
         await pool.transaction((db) => syncSchema(db, ohpDbSchemaLevel, ohpMigrations));
         const app = buildServerApp();
-        app.listen(envConfig.serverPort, () => {
-            console.log(`Demo API listening to port ${envConfig.serverPort}`);
+        app.listen(env.serverPort, () => {
+            console.log(`Demo API listening to port ${env.serverPort}`);
         });
     })
     .catch((err) => {

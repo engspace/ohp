@@ -1,4 +1,14 @@
-import { onMounted, ref, provide, inject } from '@vue/composition-api';
+import { useMutation } from '@vue/apollo-composable';
+import {
+    onMounted,
+    ref,
+    provide,
+    inject,
+    Ref,
+    computed,
+} from '@vue/composition-api';
+import gql from 'graphql-tag';
+import { ACCOUNT_FIELDS } from '@/graphql';
 import { useScript } from './script';
 
 export type GoogleUser = gapi.auth2.GoogleUser;
@@ -31,6 +41,9 @@ export function useGoogleSignIn({
         gapi.signin2.render(id, options);
     }
 
+    const user: Ref<GoogleUser | null> = ref(null);
+    const error = ref('');
+
     let successCb: (usr: GoogleUser) => void;
     let errorCb: (err: { error: string }) => void;
 
@@ -43,17 +56,23 @@ export function useGoogleSignIn({
     }
 
     async function signIn(opts?: gapi.auth2.SigninOptions): Promise<void> {
+        error.value = '';
+        user.value = null;
         let usr;
         try {
             usr = (await gsi.auth?.signIn(opts)) as GoogleUser;
         } catch (err) {
+            error.value = '';
             errorCb(err);
             return;
         }
+        user.value = usr;
         successCb(usr);
     }
 
     async function signOut(): Promise<void> {
+        error.value = '';
+        user.value = null;
         await gsi.auth?.signOut();
     }
 
@@ -85,5 +104,49 @@ export function useGoogleSignIn({
         initSignedIn(gsi.auth);
     }
 
-    return { isSignedIn, signIn, signOut, renderBtn, onSuccess, onError };
+    return {
+        isSignedIn,
+        error,
+        user,
+        signIn,
+        signOut,
+        renderBtn,
+        onSuccess,
+        onError,
+    };
+}
+
+const ACCOUNT_GOOGLE_SIGNIN = gql`
+    mutation GoogleAccountSignin($input: GoogleSigninInput!) {
+        accountGoogleSignin(input: $input) {
+            bearerToken
+            account {
+                ...AccountFields
+            }
+        }
+    }
+    ${ACCOUNT_FIELDS}
+`;
+
+export function useOhpGoogleSignIn() {
+    const { signIn, onSuccess } = useGoogleSignIn();
+    const { mutate, error: mutateError, onDone, loading } = useMutation(
+        ACCOUNT_GOOGLE_SIGNIN
+    );
+
+    const error = computed(() => {
+        if (mutateError.value) {
+            return mutateError.value.message;
+        }
+    });
+
+    onSuccess((usr: GoogleUser) => {
+        mutate({
+            input: {
+                idToken: usr.getAuthResponse().id_token,
+            },
+        });
+    });
+
+    return { signIn, loading, onDone, error };
 }

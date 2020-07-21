@@ -22,6 +22,7 @@
     },
     "license": "MIT",
     "main": "dist/index",
+    "module": "src/index",
     "private": true,
     "repository": "https://github.com/engspace/ohp",
     "scripts": {

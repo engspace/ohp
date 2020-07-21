@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { token as authToken } from './services/auth';
 
 export const host = process.env.VUE_APP_API_HOST || window.location.hostname;
 export const port = process.env.VUE_APP_API_PORT || '3000';
@@ -15,20 +14,6 @@ export const port = process.env.VUE_APP_API_PORT || '3000';
 export function url(resource = ''): string {
     const portPart = port === '80' ? '' : `:${port}`;
     return `http://${host}${portPart}${resource}`;
-}
-
-export function optionalAuthHeader(): { Authorization?: string } {
-    const token = authToken();
-    if (token) return { Authorization: `Bearer ${token}` };
-    else return {};
-}
-
-export function requiredAuthHeader(): { Authorization: string } {
-    const token = authToken();
-    if (!token) {
-        throw new Error('Unauthenticated API call');
-    }
-    return { Authorization: `Bearer ${token}` };
 }
 
 export function buildQuery(obj: any) {

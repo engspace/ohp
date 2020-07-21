@@ -7,7 +7,11 @@ CREATE TABLE account (
     type_id text NOT NULL,
     active boolean NOT NULL,
     user_id integer NOT NULL,
-    verif text NOT NULL,
+    password text,
+    provider_id text,
+
+    registered timestamptz NOT NULL,
+    last_signin timestamptz,
 
     FOREIGN KEY(type_id) REFERENCES account_type(id),
     FOREIGN KEY(user_id) REFERENCES "user"(id)

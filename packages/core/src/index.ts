@@ -1,15 +1,35 @@
-import { Id, IdOr, User } from '@engspace/core';
+import { Id, IdOr, User, DateTime } from '@engspace/core';
 
 export enum AccountType {
     Local = 'LOCAL',
     Google = 'GOOGLE',
 }
 
+export type Provider = AccountType.Google;
+
 export interface Account {
     id: Id;
     type: AccountType;
     active: boolean;
     user: IdOr<User>;
+    registered: DateTime;
+    lastSignin?: DateTime;
+}
+
+export interface SigninResult {
+    bearerToken: string;
+    account: Account;
+}
+
+export interface TokenPayload {
+    /** Issuer: open-hardware-platform.com */
+    iss: string;
+    /** Subject: the id of the user in the database */
+    sub: string;
+    /** Name (pseudo) of the user */
+    name: string;
+    /** Url to the user picture */
+    picture: string;
 }
 
 export interface Organization {

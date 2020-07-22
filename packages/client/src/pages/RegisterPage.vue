@@ -1,6 +1,6 @@
 <template>
     <v-container fluid>
-        <v-row align="center" justify="center" class="ma-12">
+        <v-row align="center" justify="center" class="my-12">
             <v-col cols="12" sm="8" md="5" xl="3">
                 <provider-signin-card></provider-signin-card>
             </v-col>
@@ -14,18 +14,22 @@
                         </v-toolbar-title>
                     </v-toolbar>
                     <v-card-text>
-                        <v-form v-model="formValid">
+                        <v-form ref="form" v-model="formValid">
                             <v-text-field
                                 v-model="name"
                                 prepend-icon="mdi-account"
-                                label="Pseudo"
+                                label="pseudo"
+                                prefix="@"
                                 :rules="[required]"
                                 dense
-                            ></v-text-field>
+                                class="required"
+                                required
+                            >
+                            </v-text-field>
                             <v-text-field
                                 v-model="fullName"
                                 prepend-icon="mdi-account"
-                                label="Full name"
+                                label="Full name - optional"
                                 dense
                             ></v-text-field>
                             <v-text-field
@@ -34,6 +38,8 @@
                                 label="E-mail"
                                 :rules="[required, isEmail]"
                                 dense
+                                class="required"
+                                required
                             ></v-text-field>
                             <v-text-field
                                 v-model="password"
@@ -45,6 +51,8 @@
                                 "
                                 :type="showPswd ? 'text' : 'password'"
                                 dense
+                                required
+                                class="required"
                                 @click:append="showPswd = !showPswd"
                             ></v-text-field>
                             <div class="text-center mt-5">
@@ -57,9 +65,6 @@
                         <v-alert :value="!!displayedError" type="error">{{
                             displayedError
                         }}</v-alert>
-                        <v-alert :value="!!confirmation" type="success">{{
-                            confirmation
-                        }}</v-alert>
                     </v-card-text>
                     <v-card-actions>
                         <v-btn
@@ -71,6 +76,29 @@
                         <v-spacer></v-spacer>
                         <v-subheader>Already registered?</v-subheader>
                         <v-btn to="/signin" color="primary">Sign-in</v-btn>
+                        <v-snackbar
+                            :value="!!confirmation"
+                            app
+                            color="success"
+                            multi-line
+                            :timeout="10000"
+                            @input="confirmation = ''"
+                        >
+                            Your account has been created but is inactive. An
+                            activation link was sent to {{ confirmation }}.
+                            <template v-slot:action="{ attrs }">
+                                <v-btn to="/signin" text v-bind="attrs">
+                                    Take me to signin
+                                </v-btn>
+                                <v-btn
+                                    text
+                                    v-bind="attrs"
+                                    @click="confirmation = ''"
+                                >
+                                    Close
+                                </v-btn>
+                            </template>
+                        </v-snackbar>
                     </v-card-actions>
                 </v-card>
             </v-col>
@@ -93,6 +121,7 @@ export default defineComponent({
         ProviderSigninCard,
     },
     setup() {
+        const form = ref(null);
         const name = ref('');
         const fullName = ref('');
         const email = ref('');
@@ -160,10 +189,10 @@ export default defineComponent({
             () => registerError.value?.message || recaptchaError.value
         );
 
+        // set with the email
         const confirmation = ref('');
 
         function register() {
-            confirmation.value = '';
             recaptchaError.value = '';
             const rr = recaptchaResponse.value;
             if (!rr) {
@@ -182,18 +211,17 @@ export default defineComponent({
         }
 
         registerOnDone(() => {
+            confirmation.value = email.value;
             recaptchaError.value = '';
-            confirmation.value =
-                'Your account has been registered but is still inactive. ' +
-                'An activation link was sent to ' +
-                email.value;
             name.value = '';
             email.value = '';
             fullName.value = '';
             password.value = '';
+            ((form.value as unknown) as any)?.resetValidation();
         });
 
         return {
+            form,
             name,
             fullName,
             email,

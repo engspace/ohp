@@ -13,6 +13,8 @@ CREATE TABLE account (
     registered timestamptz NOT NULL,
     last_signin timestamptz,
 
+    UNIQUE(user_id),
+
     FOREIGN KEY(type_id) REFERENCES account_type(id),
     FOREIGN KEY(user_id) REFERENCES "user"(id)
 );

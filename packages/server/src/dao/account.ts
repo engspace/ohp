@@ -70,6 +70,22 @@ export class AccountDao extends DaoBase<Account, Row> {
         return mapRow(row);
     }
 
+    async byUserIdAndPassword(db: Db, { userId, password }: LocalInput): Promise<Account> {
+        type R = Row & { ok: boolean };
+
+        const row: R = await db.one(sql`
+            SELECT
+                ${rowToken},
+                (password = CRYPT(${password}, password)) as ok
+            FROM account
+            WHERE user_id = ${userId}
+        `);
+        if (!row || !row.ok) {
+            return null;
+        }
+        return mapRow(row);
+    }
+
     async createProvider(
         db: Db,
         { provider, userId, providerId }: ProviderInput

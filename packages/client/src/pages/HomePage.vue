@@ -1,7 +1,12 @@
 <template>
-    <div>
-        <h1>Welcome to <span class="ohp-logo text--secondary">{ohp}</span>!</h1>
-        <h2>Open-Hardware platform</h2>
+    <div class="text-center">
+        <h1>
+            Welcome to
+            <span class="ohp-logo text--secondary"
+                >openhardware-platform.com</span
+            >!
+        </h1>
+        <h2>Collaborative engineering and Open Innovation platform</h2>
         <p>Currently building-up...</p>
     </div>
 </template>

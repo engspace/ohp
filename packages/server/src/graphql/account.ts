@@ -1,7 +1,7 @@
 import { IResolvers } from 'apollo-server-koa';
 import gql from 'graphql-tag';
 import { User } from '@engspace/core';
-import { GqlContext } from '@engspace/server-api';
+import { GqlContext, isUser } from '@engspace/server-api';
 import { Account, SigninResult } from '@ohp/core';
 import { OhpControllerSet } from '../control';
 
@@ -11,6 +11,11 @@ export interface LocalAccountInput {
     fullName: string;
     password: string;
     recaptchaToken: string;
+}
+
+export interface LocalSigninInput {
+    email: string;
+    password: string;
 }
 
 export interface GoogleSigninInput {
@@ -46,6 +51,11 @@ export default {
             recaptchaToken: String!
         }
 
+        input LocalSigninInput {
+            email: String!
+            password: String!
+        }
+
         input GoogleSigninInput {
             idToken: String!
         }
@@ -56,14 +66,18 @@ export default {
 
         extend type Mutation {
             accountCreateLocal(input: LocalAccountInput!): Account!
-            accountGoogleSignin(input: GoogleSigninInput!): SigninResult!
+            accountLocalSignin(input: LocalSigninInput!): SigninResult
+            accountGoogleSignin(input: GoogleSigninInput!): SigninResult
         }
     `,
 
     buildResolvers(control: OhpControllerSet): IResolvers {
         return {
             Account: {
-                user({ user }: Account, args, ctx: GqlContext): Promise<User> {
+                async user({ user }: Account, args, ctx: GqlContext): Promise<User> {
+                    if (isUser(user)) {
+                        return user;
+                    }
                     return ctx.loaders.user.load(user.id);
                 },
             },
@@ -75,11 +89,20 @@ export default {
                 ): Promise<Account> {
                     return control.account.createLocal(ctx, input);
                 },
+
+                accountLocalSignin(
+                    parent,
+                    { input }: { input: LocalSigninInput },
+                    ctx: GqlContext
+                ): Promise<SigninResult | null> {
+                    return control.account.localSignin(ctx, input);
+                },
+
                 accountGoogleSignin(
                     parent,
                     { input }: { input: GoogleSigninInput },
                     ctx: GqlContext
-                ): Promise<SigninResult> {
+                ): Promise<SigninResult | null> {
                     return control.account.googleSignin(ctx, input);
                 },
             },

@@ -1,5 +1,5 @@
 <template>
-    <v-card>
+    <v-card :loading="loading">
         <v-toolbar dark color="primary" flat>
             <v-toolbar-title>
                 Sign-in or register with provider
@@ -10,17 +10,53 @@
                 <v-icon left>mdi-google</v-icon>
                 Google
             </v-btn>
-        </v-card-text>
-        <v-card-footer>
             <v-alert v-if="error" type="error">{{ error }}</v-alert>
-        </v-card-footer>
+        </v-card-text>
     </v-card>
 </template>
 
 <script lang="ts">
-import { defineComponent } from '@vue/composition-api';
+import { useMutation } from '@vue/apollo-composable';
+import { computed, defineComponent } from '@vue/composition-api';
+import gql from 'graphql-tag';
+import { ACCOUNT_FIELDS } from '@/graphql';
 import { useAuth } from '@/services/auth';
-import { useOhpGoogleSignIn } from '@/services/google-signin';
+import { GoogleUser, useGoogleSignIn } from '@/services/google-signin';
+
+const ACCOUNT_GOOGLE_SIGNIN = gql`
+    mutation GoogleAccountSignin($input: GoogleSigninInput!) {
+        accountGoogleSignin(input: $input) {
+            bearerToken
+            account {
+                ...AccountFields
+            }
+        }
+    }
+    ${ACCOUNT_FIELDS}
+`;
+
+function useOhpGoogleSignIn() {
+    const { signIn, onSuccess } = useGoogleSignIn();
+    const { mutate, error: mutateError, onDone, loading } = useMutation(
+        ACCOUNT_GOOGLE_SIGNIN
+    );
+
+    const error = computed(() => {
+        if (mutateError.value) {
+            return mutateError.value.message;
+        }
+    });
+
+    onSuccess((usr: GoogleUser) => {
+        mutate({
+            input: {
+                idToken: usr.getAuthResponse().id_token,
+            },
+        });
+    });
+
+    return { signIn, loading, onDone, error };
+}
 
 export default defineComponent({
     setup() {
@@ -29,15 +65,25 @@ export default defineComponent({
         const {
             signIn: googleSignIn,
             onDone: googleOnDone,
+            loading,
             error,
         } = useOhpGoogleSignIn();
 
-        googleOnDone((data) => {
-            console.log(data);
-        });
+        googleOnDone(
+            ({
+                data: {
+                    accountGoogleSignin: { bearerToken },
+                },
+            }) => {
+                console.log('signing in with ' + bearerToken);
+                signIn(bearerToken);
+                // redirect
+            }
+        );
 
         return {
             googleSignIn,
+            loading,
             error,
         };
     },

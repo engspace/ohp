@@ -82,13 +82,13 @@ export function provideAuth(): void {
     );
 
     function signIn(token: string) {
-        mutToken.value = token;
         localStorage.setItem(storageKey, token);
+        mutToken.value = token;
     }
 
     function signOut() {
-        localStorage.removeItem(storageKey);
         mutToken.value = '';
+        localStorage.removeItem(storageKey);
     }
 
     provide(AuthSymbol, {

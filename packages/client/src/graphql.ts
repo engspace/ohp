@@ -8,6 +8,8 @@ export const ACCOUNT_FIELDS = gql`
         user {
             ...UserFields
         }
+        registered
+        lastSignin
     }
     ${USER_FIELDS}
 `;

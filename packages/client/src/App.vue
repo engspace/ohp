@@ -12,4 +12,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
+.required label::after {
+    content: ' *';
+    color: var(--v-error-base);
+}
 </style>

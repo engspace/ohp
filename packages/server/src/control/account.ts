@@ -1,14 +1,15 @@
-import { UserInputError } from 'apollo-server-koa';
+import { UserInputError, ForbiddenError } from 'apollo-server-koa';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import validator from 'validator';
 import { User } from '@engspace/core';
+import { Token } from '@engspace/core/dist/naming/base';
 import { ApiContext } from '@engspace/server-api/dist/control';
 import { signJwt } from '@engspace/server-api/dist/crypto';
 import { Account, AccountType, TokenPayload, SigninResult } from '@ohp/core';
 import { OhpDaoSet } from '../dao';
 import env from '../env';
-import { LocalAccountInput, GoogleSigninInput } from '../graphql/account';
+import { LocalAccountInput, GoogleSigninInput, LocalSigninInput } from '../graphql/account';
 
 const oauthClient = new OAuth2Client({
     clientId: env.googleSigninClientId,
@@ -36,6 +37,16 @@ async function verifyRecaptcha(clientResponse: string): Promise<boolean> {
     }
 }
 
+function bearerToken(user: User, picture: string): Promise<string> {
+    const payload: TokenPayload = {
+        iss: 'open-hardware-platform.com',
+        sub: user.id,
+        name: user.name,
+        picture,
+    };
+    return signJwt(payload, env.jwtSecret, {});
+}
+
 export class AccountControl {
     constructor(private dao: OhpDaoSet) {}
 
@@ -60,8 +71,32 @@ export class AccountControl {
             console.log('creating account');
             console.log(user);
             console.log(account);
+            account.user = user;
             return account;
         });
+    }
+
+    async localSignin(
+        ctx: ApiContext,
+        { email, password }: LocalSigninInput
+    ): Promise<SigninResult | null> {
+        const { db } = ctx;
+        const user = await this.dao.user.byEmail(db, email);
+        if (!user) {
+            throw new ForbiddenError('no such email in the database');
+        }
+        const account = await this.dao.account.byUserIdAndPassword(db, {
+            userId: user.id,
+            password,
+        });
+        if (!account) {
+            throw new ForbiddenError('wrong password!');
+        }
+        account.user = user;
+        return {
+            bearerToken: await bearerToken(user, ''),
+            account,
+        };
     }
 
     async googleSignin(
@@ -98,16 +133,9 @@ export class AccountControl {
             user = await this.dao.user.byId(db, account.user.id);
         }
 
-        const bearerTokenPayload: TokenPayload = {
-            iss: 'open-hardware-platform.com',
-            sub: user.id,
-            name: user.name,
-            picture: payload.picture,
-        };
-
-        const bearerToken = await signJwt(bearerTokenPayload, env.jwtSecret, {});
+        account.user = user;
         return {
-            bearerToken,
+            bearerToken: await bearerToken(user, payload.picture),
             account,
         };
     }

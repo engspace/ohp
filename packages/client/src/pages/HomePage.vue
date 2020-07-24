@@ -2,9 +2,8 @@
     <div class="text-center">
         <h1>
             Welcome to
-            <span class="ohp-logo text--secondary"
-                >openhardware-platform.com</span
-            >!
+
+            <span id="ohpurl">openhardware-platform.com</span>!
         </h1>
         <h2>Collaborative engineering and Open Innovation platform</h2>
         <p>Currently building-up...</p>
@@ -16,3 +15,10 @@ export default {
     name: 'Home',
 };
 </script>
+
+<style>
+#ohpurl {
+    font-family: 'Fira Code', 'Lucida Console', Monaco, monospace;
+    opacity: 83%;
+}
+</style>

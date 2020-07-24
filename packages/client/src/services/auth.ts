@@ -5,18 +5,21 @@ import {
     provide,
     inject,
     InjectionKey,
+    watch,
 } from '@vue/composition-api';
 import jwtDecode from 'jwt-decode';
 import { Id } from '@engspace/core';
 import { TokenPayload } from '@ohp/core';
+import { api } from '@/api';
 
-const storageKey = 'bearer-token';
+const storageKey = 'refresh-token';
+let mutableBearerToken = '';
 
 /**
  * Login token
  */
 export function bearerToken(): string | null {
-    return localStorage.getItem(storageKey);
+    return mutableBearerToken;
 }
 
 /**
@@ -63,7 +66,7 @@ const AuthSymbol: InjectionKey<AuthStore> = Symbol();
  * Provide reactive authentification information to Vue
  */
 export function provideAuth(): void {
-    const mutToken = ref(bearerToken() || '');
+    const mutToken = ref(bearerToken());
     const payload = computed(() =>
         mutToken.value ? (jwtDecode(mutToken.value) as TokenPayload) : null
     );
@@ -81,15 +84,48 @@ export function provideAuth(): void {
             : {}
     );
 
-    function signIn(token: string) {
-        localStorage.setItem(storageKey, token);
-        mutToken.value = token;
+    function signIn(bearerToken: string, refreshToken: string) {
+        localStorage.setItem(storageKey, refreshToken);
+        mutableBearerToken = bearerToken;
+        mutToken.value = bearerToken;
     }
 
     function signOut() {
-        mutToken.value = '';
         localStorage.removeItem(storageKey);
+        mutableBearerToken = '';
+        mutToken.value = '';
     }
+
+    async function refreshToken() {
+        const tok = localStorage.getItem(storageKey);
+        if (!tok) return false;
+        try {
+            const {
+                status,
+                data: { newBearerToken, newRefreshToken },
+            } = await api.post('/api/refresh_token', {
+                refreshToken: tok,
+            });
+            if (status === 200) {
+                signIn(newBearerToken, newRefreshToken);
+                return;
+            }
+        } catch (err) {
+            console.error(err);
+            //
+        }
+        signOut();
+    }
+
+    watch(payload, (pl) => {
+        if (!pl) return;
+        // refresh token 10s before expiration
+        const ms = pl.exp * 1000 - Date.now() - 10000;
+        setTimeout(refreshToken, ms > 0 ? ms : 0);
+    });
+
+    // try to signin from previous session
+    refreshToken();
 
     provide(AuthSymbol, {
         token,

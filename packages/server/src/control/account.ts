@@ -1,11 +1,11 @@
 import { UserInputError, ForbiddenError } from 'apollo-server-koa';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
+import { Middleware } from 'koa';
 import validator from 'validator';
 import { User } from '@engspace/core';
-import { Token } from '@engspace/core/dist/naming/base';
-import { ApiContext } from '@engspace/server-api/dist/control';
-import { signJwt } from '@engspace/server-api/dist/crypto';
+import { ApiContext, signJwt } from '@engspace/server-api';
+import { DbPool } from '@engspace/server-db';
 import { Account, AccountType, TokenPayload, SigninResult } from '@ohp/core';
 import { OhpDaoSet } from '../dao';
 import env from '../env';
@@ -37,18 +37,20 @@ async function verifyRecaptcha(clientResponse: string): Promise<boolean> {
     }
 }
 
-function bearerToken(user: User, picture: string): Promise<string> {
-    const payload: TokenPayload = {
-        iss: 'open-hardware-platform.com',
-        sub: user.id,
+function genBearerToken(user: User, picture: string): Promise<string> {
+    const payload: Omit<TokenPayload, 'exp' | 'iss' | 'sub'> = {
         name: user.name,
         picture,
     };
-    return signJwt(payload, env.jwtSecret, {});
+    return signJwt(payload, env.jwtSecret, {
+        expiresIn: 2 * 60,
+        issuer: 'openhardware-platform.com',
+        subject: user.id,
+    });
 }
 
 export class AccountControl {
-    constructor(private dao: OhpDaoSet) {}
+    constructor(private dao: OhpDaoSet, private pool: DbPool) {}
 
     async createLocal(
         ctx: ApiContext,
@@ -92,9 +94,12 @@ export class AccountControl {
         if (!account) {
             throw new ForbiddenError('wrong password!');
         }
+        const { refreshToken, lastSignin } = await this.dao.account.signIn(db, account.id);
         account.user = user;
+        account.lastSignin = lastSignin;
         return {
-            bearerToken: await bearerToken(user, ''),
+            bearerToken: await genBearerToken(user, ''),
+            refreshToken,
             account,
         };
     }
@@ -139,14 +144,41 @@ export class AccountControl {
                 });
             });
         } else {
-            console.log(payload);
             user = await this.dao.user.byId(db, account.user.id);
         }
 
+        const { refreshToken, lastSignin } = await this.dao.account.signIn(db, account.id);
         account.user = user;
+        account.lastSignin = lastSignin;
+
         return {
-            bearerToken: await bearerToken(user, payload.picture),
+            bearerToken: await genBearerToken(user, payload.picture),
+            refreshToken,
             account,
+        };
+    }
+
+    refreshSigninEndpoint(): Middleware {
+        return async (ctx) => {
+            const { refreshToken } = ctx.request.body;
+            if (!refreshToken) {
+                ctx.throw(401);
+            }
+            const { newBearerToken, newRefreshToken } = await this.pool.transaction(async (db) => {
+                const signin = await this.dao.account.refreshSignIn(db, refreshToken);
+                if (!signin) return {};
+                const user = await this.dao.user.byId(db, signin.account.user.id);
+                const newBearerToken = await genBearerToken(user, '');
+                return {
+                    newBearerToken,
+                    newRefreshToken: signin.refreshToken,
+                };
+            });
+            if (!newBearerToken || !newRefreshToken) ctx.throw(401);
+            ctx.body = {
+                newBearerToken,
+                newRefreshToken,
+            };
         };
     }
 }

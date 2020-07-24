@@ -62,7 +62,7 @@ import { defineComponent, ref } from '@vue/composition-api';
 import gql from 'graphql-tag';
 import validator from 'validator';
 import ProviderSigninCard from '@/components/ProviderSigninCard.vue';
-import { ACCOUNT_FIELDS } from '@/graphql';
+import { SIGNIN_RESULT_FIELDS } from '@/graphql';
 import { useAuth } from '@/services/auth';
 
 export default defineComponent({
@@ -84,13 +84,10 @@ export default defineComponent({
             gql`
                 mutation LocalAccountSignin($input: LocalSigninInput!) {
                     accountLocalSignin(input: $input) {
-                        bearerToken
-                        account {
-                            ...AccountFields
-                        }
+                        ...SigninResultFields
                     }
                 }
-                ${ACCOUNT_FIELDS}
+                ${SIGNIN_RESULT_FIELDS}
             `,
             () => ({
                 variables: {
@@ -107,13 +104,13 @@ export default defineComponent({
         onDone(
             ({
                 data: {
-                    accountLocalSignin: { bearerToken },
+                    accountLocalSignin: { bearerToken, refreshToken },
                 },
             }) => {
                 email.value = '';
                 password.value = '';
                 ((form.value as unknown) as any)?.resetValidation();
-                authSignIn(bearerToken);
+                authSignIn(bearerToken, refreshToken);
                 // redirect
             }
         );

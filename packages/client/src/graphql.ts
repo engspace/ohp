@@ -17,6 +17,7 @@ export const ACCOUNT_FIELDS = gql`
 export const SIGNIN_RESULT_FIELDS = gql`
     fragment SigninResultFields on SigninResult {
         bearerToken
+        refreshToken
         account {
             ...AccountFields
         }

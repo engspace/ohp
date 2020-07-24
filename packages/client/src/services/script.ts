@@ -32,6 +32,5 @@ export function useScript({
             script.setAttribute('defer', '');
         }
         document.head.appendChild(script);
-        console.log('adding script ' + src);
     });
 }

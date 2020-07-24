@@ -31,20 +31,17 @@
 import { useMutation } from '@vue/apollo-composable';
 import { computed, defineComponent, ref, Ref } from '@vue/composition-api';
 import gql from 'graphql-tag';
-import { ACCOUNT_FIELDS } from '@/graphql';
+import { SIGNIN_RESULT_FIELDS } from '@/graphql';
 import { useAuth } from '@/services/auth';
 import { GoogleUser, useGoogleSignIn } from '@/services/google-signin';
 
 const ACCOUNT_GOOGLE_SIGNIN = gql`
     mutation GoogleAccountSignin($input: GoogleSigninInput!) {
         accountGoogleSignin(input: $input) {
-            bearerToken
-            account {
-                ...AccountFields
-            }
+            ...SigninResultFields
         }
     }
-    ${ACCOUNT_FIELDS}
+    ${SIGNIN_RESULT_FIELDS}
 `;
 
 function useOhpGoogleSignIn(pseudo: Ref<string | null>) {
@@ -84,7 +81,7 @@ export default defineComponent({
         const form = ref(null);
         const formValid = ref(!props.registerMode);
         const pseudo = ref(props.registerMode ? '' : null);
-        const required = (val) => !!val || 'Required';
+        const required = (val: string) => !!val || 'Required';
 
         const {
             signIn: googleSignIn,
@@ -96,11 +93,10 @@ export default defineComponent({
         googleOnDone(
             ({
                 data: {
-                    accountGoogleSignin: { bearerToken },
+                    accountGoogleSignin: { bearerToken, refreshToken },
                 },
             }) => {
-                console.log('signing in with ' + bearerToken);
-                signIn(bearerToken);
+                signIn(bearerToken, refreshToken);
                 // redirect
             }
         );

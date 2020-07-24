@@ -18,14 +18,17 @@ export interface Account {
 
 export interface SigninResult {
     bearerToken: string;
+    refreshToken: string;
     account: Account;
 }
 
 export interface TokenPayload {
-    /** Issuer: open-hardware-platform.com */
+    /** Issuer: openhardware-platform.com */
     iss: string;
     /** Subject: the id of the user in the database */
     sub: string;
+    /** Expiration date (seconds since epoch) */
+    exp: number;
     /** Name (pseudo) of the user */
     name: string;
     /** Url to the user picture */

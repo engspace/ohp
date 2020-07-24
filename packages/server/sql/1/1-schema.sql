@@ -1,3 +1,4 @@
+
 CREATE TABLE account_type (
     id text PRIMARY KEY
 );
@@ -7,6 +8,7 @@ CREATE TABLE account (
     type_id text NOT NULL,
     active boolean NOT NULL,
     user_id integer NOT NULL,
+    refresh_token bytea,
     password text,
     provider_id text,
 
@@ -18,6 +20,8 @@ CREATE TABLE account (
     FOREIGN KEY(type_id) REFERENCES account_type(id),
     FOREIGN KEY(user_id) REFERENCES "user"(id)
 );
+
+CREATE INDEX account_refresh_token ON account USING HASH(refresh_token);
 
 CREATE TABLE organization (
     id serial PRIMARY KEY,

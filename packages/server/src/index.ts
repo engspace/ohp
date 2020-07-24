@@ -64,7 +64,7 @@ const dbPoolConfig: DbPoolConfig = {
 const rolePolicies = buildAppRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
-const control = buildOhpControllerSet(dao);
+const control = buildOhpControllerSet(dao, pool);
 const config = {
     rolePolicies,
     storePath: env.storePath,
@@ -98,15 +98,16 @@ function buildServerApp(): Koa {
     app.use(corsMiddleware);
     app.use(logger());
     app.use(
-        checkAuthOrDefaultMiddleware({
+        checkAuthOrDefaultMiddleware(env.jwtSecret, {
             userId: '',
             userPerms: config.rolePolicies.user.permissions([]),
         })
     );
 
     const router = new Router({ prefix: '/api' });
-    router.get('/check_token', checkTokenEndpoint);
+    router.post('/refresh_token', control.account.refreshSigninEndpoint());
     app.use(router.routes());
+    app.use(router.allowedMethods());
 
     const gql = {
         path: '/api/graphql',

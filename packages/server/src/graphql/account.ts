@@ -41,6 +41,7 @@ export default {
 
         type SigninResult {
             bearerToken: String!
+            refreshToken: String!
             account: Account!
         }
 

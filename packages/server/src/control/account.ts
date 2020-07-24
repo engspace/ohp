@@ -101,7 +101,7 @@ export class AccountControl {
 
     async googleSignin(
         ctx: ApiContext,
-        { idToken }: GoogleSigninInput
+        { registerPseudo, idToken }: GoogleSigninInput
     ): Promise<SigninResult | null> {
         let payload;
         try {
@@ -120,9 +120,18 @@ export class AccountControl {
         let user: User;
         if (!account) {
             // user not registered
+            if (!registerPseudo) {
+                throw new UserInputError(
+                    'Account is not in database. Registration requires a Pseudonym!'
+                );
+            }
             const { email, name } = payload;
             await db.transaction(async (db) => {
-                user = await this.dao.user.create(db, { name: sub, email, fullName: name });
+                user = await this.dao.user.create(db, {
+                    name: registerPseudo,
+                    email,
+                    fullName: name,
+                });
                 account = await this.dao.account.createProvider(db, {
                     provider: AccountType.Google,
                     userId: user.id,
@@ -130,6 +139,7 @@ export class AccountControl {
                 });
             });
         } else {
+            console.log(payload);
             user = await this.dao.user.byId(db, account.user.id);
         }
 

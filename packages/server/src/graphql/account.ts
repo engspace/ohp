@@ -19,6 +19,7 @@ export interface LocalSigninInput {
 }
 
 export interface GoogleSigninInput {
+    registerPseudo?: string;
     idToken: string;
 }
 
@@ -57,6 +58,7 @@ export default {
         }
 
         input GoogleSigninInput {
+            registerPseudo: String
             idToken: String!
         }
 

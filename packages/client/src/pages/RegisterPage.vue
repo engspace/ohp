@@ -2,7 +2,7 @@
     <v-container fluid>
         <v-row align="center" justify="center" class="my-12">
             <v-col cols="12" sm="8" md="5" xl="3">
-                <provider-signin-card></provider-signin-card>
+                <provider-signin-card register-mode></provider-signin-card>
             </v-col>
         </v-row>
         <v-row align="center" justify="center">

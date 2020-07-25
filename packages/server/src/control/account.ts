@@ -43,7 +43,7 @@ function genBearerToken(user: User, picture: string): Promise<string> {
         picture,
     };
     return signJwt(payload, env.jwtSecret, {
-        expiresIn: 2 * 60,
+        expiresIn: 10 * 60,
         issuer: 'openhardware-platform.com',
         subject: user.id,
     });

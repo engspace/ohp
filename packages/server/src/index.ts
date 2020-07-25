@@ -8,7 +8,6 @@ import {
     corsMiddleware,
     graphQLEndpoint,
     StaticEsNaming,
-    checkAuthOrDefaultMiddleware,
     EsServerConfig,
 } from '@engspace/server-api';
 import {
@@ -65,7 +64,7 @@ export interface OhpServerConfig extends EsServerConfig {
 const rolePolicies = buildAppRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
-const control = buildOhpControllerSet(dao, pool);
+const control = buildOhpControllerSet(dao, pool, rolePolicies);
 const config: OhpServerConfig = {
     rolePolicies,
     storePath: env.storePath,
@@ -112,12 +111,7 @@ function buildServerApp(): Koa {
     app.use(bodyParserMiddleware);
     app.use(corsMiddleware);
     app.use(logger());
-    app.use(
-        checkAuthOrDefaultMiddleware(env.jwtSecret, {
-            userId: '',
-            userPerms: config.rolePolicies.user.permissions([]),
-        })
-    );
+    app.use(control.account.checkBearerTokenMiddleware());
 
     const router = new Router({ prefix: '/api' });
     router.post('/refresh_token', control.account.refreshSigninEndpoint());

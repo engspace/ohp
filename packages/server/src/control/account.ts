@@ -1,15 +1,25 @@
 import { UserInputError, ForbiddenError } from 'apollo-server-koa';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
-import { Middleware } from 'koa';
+import { Middleware as KoaMiddleware } from 'koa';
 import validator from 'validator';
-import { User } from '@engspace/core';
-import { ApiContext, signJwt } from '@engspace/server-api';
+import { User, AuthToken, AppRolePolicies } from '@engspace/core';
+import {
+    ApiContext,
+    signJwt,
+    extractBearerToken,
+    verifyJwt,
+    EsKoaState,
+} from '@engspace/server-api';
 import { DbPool } from '@engspace/server-db';
 import { Account, AccountType, TokenPayload, SigninResult } from '@ohp/core';
 import { OhpDaoSet } from '../dao';
 import env from '../env';
 import { LocalAccountInput, GoogleSigninInput, LocalSigninInput } from '../graphql/account';
+
+type OhpKoaState = EsKoaState;
+
+type Middleware = KoaMiddleware<OhpKoaState>;
 
 const oauthClient = new OAuth2Client({
     clientId: env.googleSigninClientId,
@@ -50,7 +60,11 @@ function genBearerToken(user: User, picture: string): Promise<string> {
 }
 
 export class AccountControl {
-    constructor(private dao: OhpDaoSet, private pool: DbPool) {}
+    constructor(
+        private dao: OhpDaoSet,
+        private pool: DbPool,
+        private rolePolices: AppRolePolicies
+    ) {}
 
     async createLocal(
         ctx: ApiContext,
@@ -179,6 +193,32 @@ export class AccountControl {
                 newBearerToken,
                 newRefreshToken,
             };
+        };
+    }
+
+    checkBearerTokenMiddleware(): Middleware {
+        const userPerms = this.rolePolices.user.permissions([]);
+        return async (ctx, next) => {
+            //
+            const token = extractBearerToken(ctx);
+            if (token) {
+                try {
+                    const payload = await verifyJwt<TokenPayload>(token, env.jwtSecret);
+                    ctx.state.authToken = {
+                        userId: payload.sub,
+                        userPerms,
+                    };
+                } catch (err) {
+                    console.error(err);
+                    ctx.throw(403);
+                }
+            } else {
+                ctx.state.authToken = {
+                    userId: '',
+                    userPerms,
+                };
+            }
+            return next();
         };
     }
 }

@@ -9,6 +9,7 @@ import {
     graphQLEndpoint,
     StaticEsNaming,
     EsServerConfig,
+    connectDbMiddleware,
 } from '@engspace/server-api';
 import {
     connectionString,
@@ -111,6 +112,7 @@ function buildServerApp(): Koa {
     app.use(bodyParserMiddleware);
     app.use(corsMiddleware);
     app.use(logger());
+    app.use(connectDbMiddleware(pool));
     app.use(control.account.checkBearerTokenMiddleware());
 
     const router = new Router({ prefix: '/api' });

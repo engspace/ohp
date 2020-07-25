@@ -10,4 +10,5 @@ export default {
     googleRecaptchaSecret: process.env.GOOGLE_RECAPTCHA_SECRET,
     googleSigninClientId: process.env.GOOGLE_SIGNIN_CLIENT_ID,
     jwtSecret: process.env.JWT_SECRET,
+    devInitScript: process.env.DEV_INIT_SCRIPT,
 };

@@ -1,2 +1,5 @@
 .env
 store/
+sql/dev-*
+src/dev-*
+

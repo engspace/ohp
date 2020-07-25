@@ -2,19 +2,14 @@ import Router from '@koa/router';
 import Koa from 'koa';
 import helmet from 'koa-helmet';
 import logger from 'koa-logger';
-import {
-    buildDefaultAppRolePolicies,
-    PartRefNaming,
-    ChangeRequestNaming,
-    buildAppRolePolicies,
-} from '@engspace/core';
+import { PartRefNaming, ChangeRequestNaming, buildAppRolePolicies } from '@engspace/core';
 import {
     bodyParserMiddleware,
     corsMiddleware,
-    checkTokenEndpoint,
     graphQLEndpoint,
     StaticEsNaming,
     checkAuthOrDefaultMiddleware,
+    EsServerConfig,
 } from '@engspace/server-api';
 import {
     connectionString,
@@ -23,12 +18,13 @@ import {
     DbPool,
     DbPoolConfig,
     DbPreparationConfig,
+    executeSqlFile,
     syncSchema,
     prepareDb,
     ServerConnConfig,
 } from '@engspace/server-db';
-import { buildOhpControllerSet } from './control';
-import { buildOhpDaoSet } from './dao';
+import { buildOhpControllerSet, OhpControllerSet } from './control';
+import { buildOhpDaoSet, OhpDaoSet } from './dao';
 import env from './env';
 import { buildOhpGqlSchema } from './graphql';
 import ohpMigrations from './migrations';
@@ -61,11 +57,16 @@ const dbPoolConfig: DbPoolConfig = {
     },
 };
 
+export interface OhpServerConfig extends EsServerConfig {
+    dao: OhpDaoSet;
+    control: OhpControllerSet;
+}
+
 const rolePolicies = buildAppRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
 const control = buildOhpControllerSet(dao, pool);
-const config = {
+const config: OhpServerConfig = {
     rolePolicies,
     storePath: env.storePath,
     pool,
@@ -80,6 +81,20 @@ const config = {
 prepareDb(dbPreparationConfig)
     .then(async () => {
         await pool.transaction((db) => syncSchema(db, ohpDbSchemaLevel, ohpMigrations));
+        if (env.devInitScript) {
+            if (env.devInitScript.endsWith('.sql')) {
+                await pool.transaction((db) => {
+                    console.log('executing ' + env.devInitScript);
+                    return executeSqlFile(db, {
+                        path: env.devInitScript,
+                        stmtSplit: ';',
+                    });
+                });
+            } else {
+                const { default: initScript } = await import(env.devInitScript);
+                await initScript(config);
+            }
+        }
         const app = buildServerApp();
         app.listen(env.serverPort, () => {
             console.log(`Demo API listening to port ${env.serverPort}`);

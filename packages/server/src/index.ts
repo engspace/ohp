@@ -108,7 +108,7 @@ prepareDb(dbPreparationConfig)
 function buildServerApp(): Koa {
     const app = new Koa();
 
-    // app.use(helmet());
+    app.use(helmet());
     app.use(bodyParserMiddleware);
     app.use(corsMiddleware);
     app.use(logger());

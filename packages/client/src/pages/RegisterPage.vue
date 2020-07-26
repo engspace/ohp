@@ -21,6 +21,7 @@
                                 label="pseudo"
                                 prefix="@"
                                 :rules="[required]"
+                                :error-messages="nameConflictErrorMsg"
                                 dense
                                 class="required"
                                 required
@@ -37,6 +38,7 @@
                                 prepend-icon="mdi-at"
                                 label="E-mail"
                                 :rules="[required, isEmail]"
+                                :error-messages="emailConflictErrorMsg"
                                 dense
                                 class="required"
                                 required
@@ -146,14 +148,14 @@ export default defineComponent({
         });
         const nameConflictErrorMsg = computed(() => {
             if (name.value && nameConflict.value) {
-                return `${name} already exists in the database`;
+                return `${name.value} already exists in the database`;
             }
             return '';
         });
 
         const emailConflictErrorMsg = computed(() => {
             if (email.value && emailConflict.value) {
-                return `${email} already exists in the database`;
+                return `${email.value} already exists in the database`;
             }
             return '';
         });

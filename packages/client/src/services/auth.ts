@@ -56,7 +56,7 @@ interface AuthStore {
     userName: Ref<Readonly<string>>;
     userPicture: Ref<Readonly<string>>;
     header: Ref<Readonly<{ Authorization?: string }>>;
-    signIn: (bearerToken: string) => void;
+    signIn: (bearerToken: string, refreshToken: string) => void;
     signOut: () => void;
 }
 

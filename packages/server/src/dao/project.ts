@@ -2,22 +2,6 @@ import { sql } from 'slonik';
 import { Id, Project, ProjectInput } from '@engspace/core';
 import { Db, RowId, toId, DaoBaseConfig, foreignKey, ProjectDao } from '@engspace/server-db';
 
-const dependencies = ['organization'];
-
-const schema = [
-    sql`
-        CREATE TABLE project (
-            id serial PRIMARY KEY,
-            organization_id integer NOT NULL,
-            name text NOT NULL,
-            code text NOT NULL UNIQUE,
-            description text,
-
-            FOREIGN KEY(organization_id) REFERENCES organization(id)
-        )
-    `,
-];
-
 export interface ProjectSearch {
     phrase?: string;
     member?: string;

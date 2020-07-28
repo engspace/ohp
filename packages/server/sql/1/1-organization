@@ -1,0 +1,2 @@
+-- Creation of table organization and adding organization_id foreign key to engspace tables
+-- See src/migrations/1

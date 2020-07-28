@@ -3,7 +3,7 @@ import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import { Middleware as KoaMiddleware } from 'koa';
 import validator from 'validator';
-import { User, AuthToken, AppRolePolicies } from '@engspace/core';
+import { User, AppRolePolicies } from '@engspace/core';
 import {
     ApiContext,
     signJwt,
@@ -79,15 +79,25 @@ export class AccountControl {
         if (!recaptchaToken || !(await verifyRecaptcha(recaptchaToken))) {
             throw new UserInputError('This application is reserved to humans.');
         }
-        // all clear, we create a user, an inactive account and we send an email
+        // all clear, we create an organization and a user, an inactive account and we send an email
         return ctx.db.transaction(async (db) => {
-            const user = await this.dao.user.create(db, { name, email, fullName });
+            const org = await this.dao.organization.create(db, {
+                name,
+                description: `organization for user ${name}`,
+            });
+            const user = await this.dao.user.create(db, {
+                organizationId: org.id,
+                name,
+                email,
+                fullName,
+            });
             const account = await this.dao.account.createLocal(db, { userId: user.id, password });
 
             console.log('creating account');
             console.log(user);
             console.log(account);
             account.user = user;
+            // TODO send email
             return account;
         });
     }
@@ -146,7 +156,12 @@ export class AccountControl {
             }
             const { email, name } = payload;
             await db.transaction(async (db) => {
+                const org = await this.dao.organization.create(db, {
+                    name: registerPseudo,
+                    description: `organization for user ${name}`,
+                });
                 user = await this.dao.user.create(db, {
+                    organizationId: org.id,
                     name: registerPseudo,
                     email,
                     fullName: name,

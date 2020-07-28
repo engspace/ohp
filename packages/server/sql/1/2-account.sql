@@ -3,6 +3,10 @@ CREATE TABLE account_type (
     id text PRIMARY KEY
 );
 
+INSERT INTO account_type (id) VALUES
+    ('LOCAL'),
+    ('GOOGLE');
+
 CREATE TABLE account (
     id serial PRIMARY KEY,
     type_id text NOT NULL,
@@ -23,8 +27,3 @@ CREATE TABLE account (
 
 CREATE INDEX account_refresh_token ON account USING HASH(refresh_token);
 
-CREATE TABLE organization (
-    id serial PRIMARY KEY,
-    name text NOT NULL,
-    description text NOT NULL
-);

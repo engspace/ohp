@@ -1,6 +1,7 @@
 import { sql } from 'slonik';
-import { RowId, toId, DaoBaseConfig, DaoBase } from '@engspace/server-db';
-import { Organization } from '@ohp/core';
+import { Id } from '@engspace/core';
+import { RowId, toId, DaoBase, Db } from '@engspace/server-db';
+import { Organization, OrganizationInput } from '@ohp/core';
 
 const table = 'organization';
 
@@ -28,11 +29,52 @@ export interface Input {
 }
 
 export class OrganizationDao extends DaoBase<Organization, Row> {
-    constructor(config: Partial<DaoBaseConfig<Organization, Row>> = {}) {
+    constructor() {
         super(table, {
             rowToken,
             mapRow,
-            ...config,
         });
+    }
+
+    async create(db: Db, { name, description }: OrganizationInput): Promise<Organization> {
+        const row: Row = await db.one(sql`
+            INSERT INTO organization (
+                name, description
+            )
+            VALUES (
+                ${name}, ${description}
+            )
+            RETURNING ${rowToken}
+        `);
+        return mapRow(row);
+    }
+
+    async byName(db: Db, name: string): Promise<Organization | null> {
+        const row: Row = db.mayBeOne(sql`
+            SELECT ${rowToken} from organization
+            WHERE name = ${name}
+        `);
+        return row ? mapRow(row) : null;
+    }
+
+    async update(db: Db, id: Id, { name, description }: OrganizationInput): Promise<Organization> {
+        const row: Row = await db.one(sql`
+            UPDATE organization SET
+                name = ${name},
+                description = ${description}
+            WHERE id = ${id}
+            RETURNING ${rowToken}
+        `);
+        return mapRow(row);
+    }
+
+    async rename(db: Db, { from, to }: { from: string; to: string }): Promise<Organization> {
+        const row: Row = await db.one(sql`
+            UPDATE organization SET
+                name = ${to}
+            WHERE name = ${from}
+            RETURNING ${rowToken}
+        `);
+        return mapRow(row);
     }
 }

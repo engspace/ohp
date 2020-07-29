@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import VueRouter, { RouteConfig } from 'vue-router';
 import HomePage from '../pages/HomePage.vue';
+import ProjectCreatePage from '../pages/ProjectCreatePage.vue';
 import RegisterPage from '../pages/RegisterPage.vue';
 import SigninPage from '../pages/SigninPage.vue';
 
@@ -21,6 +22,11 @@ const routes: Array<RouteConfig> = [
         path: '/register',
         name: 'Register',
         component: RegisterPage,
+    },
+    {
+        path: '/create-project',
+        name: 'Create project',
+        component: ProjectCreatePage,
     },
 ];
 

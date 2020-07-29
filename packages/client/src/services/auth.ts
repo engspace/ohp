@@ -79,7 +79,7 @@ export function provideAuth(): void {
     const header = computed(() =>
         mutToken.value
             ? {
-                  Authorization: mutToken.value,
+                  Authorization: `Bearer ${mutToken.value}`,
               }
             : {}
     );

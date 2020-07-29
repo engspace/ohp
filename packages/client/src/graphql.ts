@@ -24,3 +24,20 @@ export const SIGNIN_RESULT_FIELDS = gql`
     }
     ${ACCOUNT_FIELDS}
 `;
+
+export const ORGANIZATION_FIELDS = gql`
+    fragment OrganizationFields on Organization {
+        id
+        name
+        description
+    }
+`;
+
+export const PROJECT_FIELDS = gql`
+    fragment ProjectFields on Project {
+        id
+        code
+        name
+        description
+    }
+`;

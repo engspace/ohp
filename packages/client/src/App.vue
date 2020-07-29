@@ -15,7 +15,6 @@
                 <v-btn to="/register" light>Register</v-btn>
             </span>
         </v-app-bar>
-        <v-navigation-drawer app permanent clipped></v-navigation-drawer>
         <v-main>
             <router-view />
         </v-main>

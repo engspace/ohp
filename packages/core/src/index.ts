@@ -1,5 +1,7 @@
 import { Id, IdOr, User, DateTime } from '@engspace/core';
 
+export { isOrganization } from './type-guards';
+
 export enum AccountType {
     Local = 'LOCAL',
     Google = 'GOOGLE',

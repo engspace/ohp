@@ -1,9 +1,9 @@
 import VueCompositionApi from '@vue/composition-api';
 import Vue from 'vue';
 import App from './App.vue';
-import { provideApollo } from './apollo';
 import env from './env';
 import router from './router';
+import { provideApollo } from './services/apollo';
 import { provideAuth } from './services/auth';
 import { provideGoogleSignIn } from './services/google-signin';
 import { vuetify } from './vuetify';
@@ -15,8 +15,8 @@ new Vue({
     router,
     vuetify,
     setup() {
-        provideApollo();
         provideAuth();
+        provideApollo();
         provideGoogleSignIn({
             clientId: env.googleSigninClientId,
         });

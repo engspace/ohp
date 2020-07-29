@@ -11,7 +11,7 @@ export default {
             name: String!
             description: String!
         }
-        extend type Organization {
+        type Organization {
             id: ID!
             name: String!
             description: String!

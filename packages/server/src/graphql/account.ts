@@ -1,7 +1,7 @@
 import { IResolvers } from 'apollo-server-koa';
 import gql from 'graphql-tag';
-import { User } from '@engspace/core';
-import { GqlContext, isUser } from '@engspace/server-api';
+import { User, isUser } from '@engspace/core';
+import { GqlContext } from '@engspace/server-api';
 import { Account, SigninResult } from '@ohp/core';
 import { OhpControllerSet } from '../control';
 

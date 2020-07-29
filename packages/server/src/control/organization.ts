@@ -24,4 +24,9 @@ export class OrganizationControl {
         const { db } = ctx;
         return this.dao.organization.byName(db, name);
     }
+
+    async byUserId(ctx: ApiContext, userId: Id): Promise<Organization[]> {
+        const { db } = ctx;
+        return this.dao.organization.byUserId(db, userId);
+    }
 }

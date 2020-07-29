@@ -57,6 +57,11 @@ export class OrganizationDao extends DaoBase<Organization, Row> {
         return row ? mapRow(row) : null;
     }
 
+    async byUserId(db: Db, userId: Id): Promise<Organization[]> {
+        // TODO
+        return [];
+    }
+
     async update(db: Db, id: Id, { name, description }: OrganizationInput): Promise<Organization> {
         const row: Row = await db.one(sql`
             UPDATE organization SET

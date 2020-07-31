@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-navigation-drawer app permanent clipped>
+        <v-navigation-drawer v-if="signedIn" app permanent clipped>
             <v-list>
                 <v-list-item to="/create-project" link>
                     <v-list-item-icon>
@@ -27,8 +27,13 @@
 </template>
 
 <script>
+import { useAuth } from '../services/auth';
 export default {
     name: 'Home',
+    setup() {
+        const { signedIn } = useAuth();
+        return { signedIn };
+    },
 };
 </script>
 

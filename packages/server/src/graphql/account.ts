@@ -1,6 +1,6 @@
 import gql from 'graphql-tag';
 import { User, isUser } from '@engspace/core';
-import { GqlContext } from '@engspace/server-api';
+import { EsGqlContext } from '@engspace/server-api';
 import { Account, SigninResult } from '@ohp/core';
 import { OhpGqlContext } from '.';
 
@@ -75,7 +75,7 @@ export default {
 
     resolvers: {
         Account: {
-            async user({ user }: Account, args: unknown, ctx: GqlContext): Promise<User> {
+            async user({ user }: Account, args: unknown, ctx: EsGqlContext): Promise<User> {
                 if (isUser(user)) {
                     return user;
                 }

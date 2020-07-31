@@ -1,6 +1,6 @@
 import { IResolvers } from 'apollo-server-koa';
 import gql from 'graphql-tag';
-import { OhpControllerSet } from '../control';
+import { OhpControlSet } from '../control';
 
 export default {
     typeDefs: gql`

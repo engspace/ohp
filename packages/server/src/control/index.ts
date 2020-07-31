@@ -1,15 +1,15 @@
-import { ControllerSet, buildControllerSet } from '@engspace/server-api';
+import { EsControlSet, buildEsControlSet } from '@engspace/server-api';
 import { AccountControl } from './account';
 import { OrganizationControl } from './organization';
 import { OhpUserControl } from './user';
 
-export interface OhpControllerSet extends ControllerSet {
+export interface OhpControlSet extends EsControlSet {
     account: AccountControl;
     organization: OrganizationControl;
 }
 
-export function buildOhpControllerSet(): OhpControllerSet {
-    const esControl = buildControllerSet({
+export function buildOhpControlSet(): OhpControlSet {
+    const esControl = buildEsControlSet({
         user: new OhpUserControl(),
     });
     return {

@@ -18,7 +18,7 @@ import {
     verifyJwt,
     EsKoaState,
     EsKoaCustom,
-    ApiContext,
+    EsContext,
 } from '@engspace/server-api';
 import {
     connectionString,
@@ -33,7 +33,7 @@ import {
     ServerConnConfig,
 } from '@engspace/server-db';
 import { OhpRolePolicies, buildOhpRolePolicies, TokenPayload } from '@ohp/core';
-import { buildOhpControllerSet, OhpControllerSet } from './control';
+import { buildOhpControlSet, OhpControlSet } from './control';
 import { buildOhpDaoSet, OhpDaoSet } from './dao';
 import env from './env';
 import { buildOhpGqlSchema } from './graphql';
@@ -65,23 +65,23 @@ const dbPoolConfig: DbPoolConfig = {
 };
 
 export type OhpKoaState = EsKoaState;
-export type OhpKoaCustom = EsKoaCustom<OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
-export type OhpKoa = EsKoa<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
-export type OhpKoaContext = EsKoaContext<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+export type OhpKoaCustom = EsKoaCustom<OhpDaoSet, OhpControlSet, OhpRolePolicies>;
+export type OhpKoa = EsKoa<AuthToken, OhpDaoSet, OhpControlSet, OhpRolePolicies>;
+export type OhpKoaContext = EsKoaContext<AuthToken, OhpDaoSet, OhpControlSet, OhpRolePolicies>;
 export type OhpKoaMiddleware = EsKoaMiddleware<
     AuthToken,
     OhpDaoSet,
-    OhpControllerSet,
+    OhpControlSet,
     OhpRolePolicies
 >;
-export type OhpContext = ApiContext<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+export type OhpContext = EsContext<AuthToken, OhpDaoSet, OhpControlSet, OhpRolePolicies>;
 export type OhpServerConfig = EsServerConfig<OhpRolePolicies>;
-export type OhpServerRuntime = EsServerRuntime<OhpDaoSet, OhpControllerSet>;
+export type OhpServerRuntime = EsServerRuntime<OhpDaoSet, OhpControlSet>;
 
 const rolePolicies = buildOhpRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
-const control = buildOhpControllerSet();
+const control = buildOhpControlSet();
 const runtime: OhpServerRuntime = {
     pool,
     dao,

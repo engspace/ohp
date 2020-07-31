@@ -2,14 +2,23 @@ import Router from '@koa/router';
 import Koa from 'koa';
 import helmet from 'koa-helmet';
 import logger from 'koa-logger';
-import { PartRefNaming, ChangeRequestNaming, buildAppRolePolicies } from '@engspace/core';
+import { PartRefNaming, ChangeRequestNaming, AuthToken } from '@engspace/core';
 import {
+    EsKoa,
+    EsKoaContext,
+    EsKoaMiddleware,
     bodyParserMiddleware,
     corsMiddleware,
     graphQLEndpoint,
     StaticEsNaming,
     EsServerConfig,
     connectDbMiddleware,
+    EsServerRuntime,
+    extractBearerToken,
+    verifyJwt,
+    EsKoaState,
+    EsKoaCustom,
+    ApiContext,
 } from '@engspace/server-api';
 import {
     connectionString,
@@ -23,6 +32,7 @@ import {
     prepareDb,
     ServerConnConfig,
 } from '@engspace/server-db';
+import { OhpRolePolicies, buildOhpRolePolicies, TokenPayload } from '@ohp/core';
 import { buildOhpControllerSet, OhpControllerSet } from './control';
 import { buildOhpDaoSet, OhpDaoSet } from './dao';
 import env from './env';
@@ -52,31 +62,91 @@ const dbPreparationConfig: DbPreparationConfig = {
 
 const dbPoolConfig: DbPoolConfig = {
     dbConnString: connectionString(dbConnConfig),
-    slonikOptions: {
-        captureStackTrace: true,
-    },
 };
 
-export interface OhpServerConfig extends EsServerConfig {
-    dao: OhpDaoSet;
-    control: OhpControllerSet;
-}
+export type OhpKoaState = EsKoaState;
+export type OhpKoaCustom = EsKoaCustom<OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+export type OhpKoa = EsKoa<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+export type OhpKoaContext = EsKoaContext<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+export type OhpKoaMiddleware = EsKoaMiddleware<
+    AuthToken,
+    OhpDaoSet,
+    OhpControllerSet,
+    OhpRolePolicies
+>;
+export type OhpContext = ApiContext<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+export type OhpServerConfig = EsServerConfig<OhpRolePolicies>;
+export type OhpServerRuntime = EsServerRuntime<OhpDaoSet, OhpControllerSet>;
 
-const rolePolicies = buildAppRolePolicies(roleDescriptors);
+const rolePolicies = buildOhpRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
-const control = buildOhpControllerSet(dao, pool, rolePolicies);
-const config: OhpServerConfig = {
-    rolePolicies,
-    storePath: env.storePath,
+const control = buildOhpControllerSet(dao);
+const runtime: OhpServerRuntime = {
     pool,
     dao,
     control,
+};
+const config: OhpServerConfig = {
+    rolePolicies,
+    storePath: env.storePath,
     naming: new StaticEsNaming({
         partRef: new PartRefNaming('${fam_code}${fam_count:5}${part_version:AA}'),
         changeRequest: new ChangeRequestNaming('CR-${counter:5}'),
     }),
 };
+
+const userPerms = rolePolicies.user.permissions([]);
+
+const checkBearerTokenMiddleware: OhpKoaMiddleware = async (ctx, next) => {
+    const token = extractBearerToken(ctx);
+    if (token) {
+        try {
+            const payload = await verifyJwt<TokenPayload>(token, env.jwtSecret);
+            ctx.state.authToken = {
+                userId: payload.sub,
+                userPerms,
+            };
+        } catch (err) {
+            console.error(err);
+            ctx.throw(403);
+        }
+    } else {
+        ctx.state.authToken = {
+            userId: '',
+            userPerms,
+        };
+    }
+    return next();
+};
+
+function buildServerApp(): OhpKoa {
+    const app: OhpKoa = new Koa();
+    app.context.runtime = runtime;
+    app.context.config = config;
+
+    app.use(helmet());
+    app.use(bodyParserMiddleware);
+    app.use(corsMiddleware);
+    app.use(logger());
+    app.use(connectDbMiddleware);
+    app.use(checkBearerTokenMiddleware);
+
+    const router = new Router<OhpKoaState, OhpKoaCustom>({ prefix: '/api' });
+    router.post('/refresh_token', control.account.refreshSigninEndpoint());
+    app.use(router.routes());
+    app.use(router.allowedMethods());
+
+    const gql = {
+        path: '/api/graphql',
+        schema: buildOhpGqlSchema(),
+        logging: true,
+    };
+
+    app.use(graphQLEndpoint(gql));
+
+    return app;
+}
 
 prepareDb(dbPreparationConfig)
     .then(async () => {
@@ -92,7 +162,7 @@ prepareDb(dbPreparationConfig)
                 });
             } else {
                 const { default: initScript } = await import(env.devInitScript);
-                await initScript(config);
+                await initScript(runtime, config);
             }
         }
         const app = buildServerApp();
@@ -104,29 +174,3 @@ prepareDb(dbPreparationConfig)
         console.error('error during the demo app');
         console.error(err);
     });
-
-function buildServerApp(): Koa {
-    const app = new Koa();
-
-    app.use(helmet());
-    app.use(bodyParserMiddleware);
-    app.use(corsMiddleware);
-    app.use(logger());
-    app.use(connectDbMiddleware(pool));
-    app.use(control.account.checkBearerTokenMiddleware());
-
-    const router = new Router({ prefix: '/api' });
-    router.post('/refresh_token', control.account.refreshSigninEndpoint());
-    app.use(router.routes());
-    app.use(router.allowedMethods());
-
-    const gql = {
-        path: '/api/graphql',
-        schema: buildOhpGqlSchema(control),
-        logging: true,
-    };
-
-    app.use(graphQLEndpoint(gql, config));
-
-    return app;
-}

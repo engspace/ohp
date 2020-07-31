@@ -12,7 +12,5 @@ export default {
             organizationId: ID!
         }
     `,
-    buildResolvers(control: OhpControllerSet): IResolvers {
-        return {};
-    },
+    resolvers: {},
 };

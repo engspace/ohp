@@ -1,6 +1,32 @@
-import { Id, IdOr, User, DateTime } from '@engspace/core';
+import {
+    Id,
+    IdOr,
+    User,
+    DateTime,
+    EsRolePolicies,
+    RolePolicy,
+    EsRoleDescriptors,
+    RoleDescriptorSet,
+    buildRolePolicy,
+} from '@engspace/core';
 
 export { isOrganization } from './type-guards';
+
+export interface OhpRoleDescriptors extends EsRoleDescriptors {
+    organization: RoleDescriptorSet;
+}
+
+export interface OhpRolePolicies extends EsRolePolicies {
+    organization: RolePolicy;
+}
+
+export function buildOhpRolePolicies(descriptors: OhpRoleDescriptors): OhpRolePolicies {
+    return {
+        user: buildRolePolicy(descriptors.user),
+        organization: buildRolePolicy(descriptors.organization),
+        project: buildRolePolicy(descriptors.project),
+    };
+}
 
 export enum AccountType {
     Local = 'LOCAL',

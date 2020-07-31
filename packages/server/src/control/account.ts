@@ -1,25 +1,13 @@
 import { UserInputError, ForbiddenError } from 'apollo-server-koa';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
-import { Middleware as KoaMiddleware } from 'koa';
 import validator from 'validator';
-import { User, AppRolePolicies } from '@engspace/core';
-import {
-    ApiContext,
-    signJwt,
-    extractBearerToken,
-    verifyJwt,
-    EsKoaState,
-} from '@engspace/server-api';
-import { DbPool } from '@engspace/server-db';
+import { User } from '@engspace/core';
+import { signJwt } from '@engspace/server-api';
 import { Account, AccountType, TokenPayload, SigninResult } from '@ohp/core';
-import { OhpDaoSet } from '../dao';
+import { OhpKoaMiddleware, OhpContext } from '..';
 import env from '../env';
 import { LocalAccountInput, GoogleSigninInput, LocalSigninInput } from '../graphql/account';
-
-type OhpKoaState = EsKoaState;
-
-type Middleware = KoaMiddleware<OhpKoaState>;
 
 const oauthClient = new OAuth2Client({
     clientId: env.googleSigninClientId,
@@ -60,14 +48,8 @@ function genBearerToken(user: User, picture: string): Promise<string> {
 }
 
 export class AccountControl {
-    constructor(
-        private dao: OhpDaoSet,
-        private pool: DbPool,
-        private rolePolices: AppRolePolicies
-    ) {}
-
     async createLocal(
-        ctx: ApiContext,
+        ctx: OhpContext,
         { name, email, fullName, password, recaptchaToken }: LocalAccountInput
     ): Promise<Account> {
         if (!validator.isEmail(email)) {
@@ -80,18 +62,22 @@ export class AccountControl {
             throw new UserInputError('This application is reserved to humans.');
         }
         // all clear, we create an organization and a user, an inactive account and we send an email
+        const { dao } = ctx.runtime;
         return ctx.db.transaction(async (db) => {
-            const org = await this.dao.organization.create(db, {
+            const org = await dao.organization.create(db, {
                 name,
                 description: `organization for user ${name}`,
             });
-            const user = await this.dao.user.create(db, {
+            const user = await dao.user.create(db, {
                 organizationId: org.id,
                 name,
                 email,
                 fullName,
             });
-            const account = await this.dao.account.createLocal(db, { userId: user.id, password });
+            const account = await dao.account.createLocal(db, {
+                userId: user.id,
+                password,
+            });
 
             console.log('creating account');
             console.log(user);
@@ -103,22 +89,23 @@ export class AccountControl {
     }
 
     async localSignin(
-        ctx: ApiContext,
+        ctx: OhpContext,
         { email, password }: LocalSigninInput
     ): Promise<SigninResult | null> {
         const { db } = ctx;
-        const user = await this.dao.user.byEmail(db, email);
+        const { dao } = ctx.runtime;
+        const user = await dao.user.byEmail(db, email);
         if (!user) {
             throw new ForbiddenError('no such email in the database');
         }
-        const account = await this.dao.account.byUserIdAndPassword(db, {
+        const account = await dao.account.byUserIdAndPassword(db, {
             userId: user.id,
             password,
         });
         if (!account) {
             throw new ForbiddenError('wrong password!');
         }
-        const { refreshToken, lastSignin } = await this.dao.account.signIn(db, account.id);
+        const { refreshToken, lastSignin } = await dao.account.signIn(db, account.id);
         account.user = user;
         account.lastSignin = lastSignin;
         return {
@@ -129,7 +116,7 @@ export class AccountControl {
     }
 
     async googleSignin(
-        ctx: ApiContext,
+        ctx: OhpContext,
         { registerPseudo, idToken }: GoogleSigninInput
     ): Promise<SigninResult | null> {
         let payload;
@@ -143,9 +130,10 @@ export class AccountControl {
             console.log(err);
         }
 
+        const { dao } = ctx.runtime;
         const { db } = ctx;
         const { sub } = payload;
-        let account = await this.dao.account.byProviderId(db, sub);
+        let account = await dao.account.byProviderId(db, sub);
         let user: User;
         if (!account) {
             // user not registered
@@ -156,27 +144,27 @@ export class AccountControl {
             }
             const { email, name } = payload;
             await db.transaction(async (db) => {
-                const org = await this.dao.organization.create(db, {
+                const org = await dao.organization.create(db, {
                     name: registerPseudo,
                     description: `organization for user ${name}`,
                 });
-                user = await this.dao.user.create(db, {
+                user = await ctx.runtime.dao.user.create(db, {
                     organizationId: org.id,
                     name: registerPseudo,
                     email,
                     fullName: name,
                 });
-                account = await this.dao.account.createProvider(db, {
+                account = await dao.account.createProvider(db, {
                     provider: AccountType.Google,
                     userId: user.id,
                     providerId: sub,
                 });
             });
         } else {
-            user = await this.dao.user.byId(db, account.user.id);
+            user = await dao.user.byId(db, account.user.id);
         }
 
-        const { refreshToken, lastSignin } = await this.dao.account.signIn(db, account.id);
+        const { refreshToken, lastSignin } = await dao.account.signIn(db, account.id);
         account.user = user;
         account.lastSignin = lastSignin;
 
@@ -187,53 +175,30 @@ export class AccountControl {
         };
     }
 
-    refreshSigninEndpoint(): Middleware {
+    refreshSigninEndpoint(): OhpKoaMiddleware {
         return async (ctx) => {
             const { refreshToken } = ctx.request.body;
             if (!refreshToken) {
                 ctx.throw(401);
             }
-            const { newBearerToken, newRefreshToken } = await this.pool.transaction(async (db) => {
-                const signin = await this.dao.account.refreshSignIn(db, refreshToken);
-                if (!signin) return {};
-                const user = await this.dao.user.byId(db, signin.account.user.id);
-                const newBearerToken = await genBearerToken(user, '');
-                return {
-                    newBearerToken,
-                    newRefreshToken: signin.refreshToken,
-                };
-            });
+            const { dao } = ctx.runtime;
+            const { newBearerToken, newRefreshToken } = await ctx.state.db.transaction(
+                async (db) => {
+                    const signin = await dao.account.refreshSignIn(db, refreshToken);
+                    if (!signin) return {};
+                    const user = await dao.user.byId(db, signin.account.user.id);
+                    const newBearerToken = await genBearerToken(user, '');
+                    return {
+                        newBearerToken,
+                        newRefreshToken: signin.refreshToken,
+                    };
+                }
+            );
             if (!newBearerToken || !newRefreshToken) ctx.throw(401);
             ctx.body = {
                 newBearerToken,
                 newRefreshToken,
             };
-        };
-    }
-
-    checkBearerTokenMiddleware(): Middleware {
-        const userPerms = this.rolePolices.user.permissions([]);
-        return async (ctx, next) => {
-            //
-            const token = extractBearerToken(ctx);
-            if (token) {
-                try {
-                    const payload = await verifyJwt<TokenPayload>(token, env.jwtSecret);
-                    ctx.state.authToken = {
-                        userId: payload.sub,
-                        userPerms,
-                    };
-                } catch (err) {
-                    console.error(err);
-                    ctx.throw(403);
-                }
-            } else {
-                ctx.state.authToken = {
-                    userId: '',
-                    userPerms,
-                };
-            }
-            return next();
         };
     }
 }

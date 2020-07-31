@@ -1,12 +1,17 @@
 import { GraphQLSchema } from 'graphql';
-import { buildEsSchema, defaultGqlModules } from '@engspace/server-api';
+import { AuthToken } from '@engspace/core';
+import { buildEsSchema, defaultGqlModules, GqlContext } from '@engspace/server-api';
+import { OhpRolePolicies } from '@ohp/core';
 import { OhpControllerSet } from '../control';
+import { OhpDaoSet } from '../dao';
 import accountGqlModule from './account';
 import organizationGqlModule from './organization';
 import projectGqlModule from './project';
 import userGqlModule from './user';
 
-export function buildOhpGqlSchema(control: OhpControllerSet): GraphQLSchema {
+export type OhpGqlContext = GqlContext<AuthToken, OhpDaoSet, OhpControllerSet, OhpRolePolicies>;
+
+export function buildOhpGqlSchema(): GraphQLSchema {
     const modules = [
         ...defaultGqlModules,
         accountGqlModule,
@@ -14,5 +19,5 @@ export function buildOhpGqlSchema(control: OhpControllerSet): GraphQLSchema {
         projectGqlModule,
         userGqlModule,
     ];
-    return buildEsSchema(control, modules);
+    return buildEsSchema(modules);
 }

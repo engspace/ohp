@@ -1,32 +1,29 @@
 import { ForbiddenError } from 'apollo-server-koa';
 import { Id } from '@engspace/core';
-import { ApiContext } from '@engspace/server-api';
 import { Organization, OrganizationInput } from '@ohp/core';
-import { OhpDaoSet } from '../dao';
+import { OhpContext } from '..';
 
 export class OrganizationControl {
-    constructor(private dao: OhpDaoSet) {}
-
-    async create(ctx: ApiContext, input: OrganizationInput): Promise<Organization> {
+    async create(ctx: OhpContext, input: OrganizationInput): Promise<Organization> {
         const { db, auth } = ctx;
         if (!auth.userId) {
             throw new ForbiddenError('Authentification required');
         }
-        return this.dao.organization.create(db, input);
+        return ctx.runtime.dao.organization.create(db, input);
     }
 
-    async byId(ctx: ApiContext, id: Id): Promise<Organization> {
+    async byId(ctx: OhpContext, id: Id): Promise<Organization> {
         const { db } = ctx;
-        return this.dao.organization.byId(db, id);
+        return ctx.runtime.dao.organization.byId(db, id);
     }
 
-    async byName(ctx: ApiContext, name: string): Promise<Organization> {
+    async byName(ctx: OhpContext, name: string): Promise<Organization> {
         const { db } = ctx;
-        return this.dao.organization.byName(db, name);
+        return ctx.runtime.dao.organization.byName(db, name);
     }
 
-    async byUserId(ctx: ApiContext, userId: Id): Promise<Organization[]> {
+    async byUserId(ctx: OhpContext, userId: Id): Promise<Organization[]> {
         const { db } = ctx;
-        return this.dao.organization.byUserId(db, userId);
+        return ctx.runtime.dao.organization.byUserId(db, userId);
     }
 }

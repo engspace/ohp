@@ -1,6 +1,6 @@
-import { AppRoleDescriptors } from '@engspace/core';
+import { OhpRoleDescriptors } from '@ohp/core';
 
-const descriptors: AppRoleDescriptors = {
+const descriptors: OhpRoleDescriptors = {
     user: {
         default: {
             permissions: [
@@ -10,6 +10,11 @@ const descriptors: AppRoleDescriptors = {
                 'partfamily.read',
                 'change.read',
             ],
+        },
+    },
+    organization: {
+        self: {
+            permissions: ['project.create', 'project.update'],
         },
     },
     project: {

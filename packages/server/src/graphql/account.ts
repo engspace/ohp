@@ -1,9 +1,8 @@
-import { IResolvers } from 'apollo-server-koa';
 import gql from 'graphql-tag';
 import { User, isUser } from '@engspace/core';
 import { GqlContext } from '@engspace/server-api';
 import { Account, SigninResult } from '@ohp/core';
-import { OhpControllerSet } from '../control';
+import { OhpGqlContext } from '.';
 
 export interface LocalAccountInput {
     name: string;
@@ -74,41 +73,39 @@ export default {
         }
     `,
 
-    buildResolvers(control: OhpControllerSet): IResolvers {
-        return {
-            Account: {
-                async user({ user }: Account, args, ctx: GqlContext): Promise<User> {
-                    if (isUser(user)) {
-                        return user;
-                    }
-                    return ctx.loaders.user.load(user.id);
-                },
+    resolvers: {
+        Account: {
+            async user({ user }: Account, args: unknown, ctx: GqlContext): Promise<User> {
+                if (isUser(user)) {
+                    return user;
+                }
+                return ctx.loaders.user.load(user.id);
             },
-            Mutation: {
-                accountCreateLocal(
-                    parent,
-                    { input }: { input: LocalAccountInput },
-                    ctx: GqlContext
-                ): Promise<Account> {
-                    return control.account.createLocal(ctx, input);
-                },
-
-                accountLocalSignin(
-                    parent,
-                    { input }: { input: LocalSigninInput },
-                    ctx: GqlContext
-                ): Promise<SigninResult | null> {
-                    return control.account.localSignin(ctx, input);
-                },
-
-                accountGoogleSignin(
-                    parent,
-                    { input }: { input: GoogleSigninInput },
-                    ctx: GqlContext
-                ): Promise<SigninResult | null> {
-                    return control.account.googleSignin(ctx, input);
-                },
+        },
+        Mutation: {
+            accountCreateLocal(
+                parent: unknown,
+                { input }: { input: LocalAccountInput },
+                ctx: OhpGqlContext
+            ): Promise<Account> {
+                return ctx.runtime.control.account.createLocal(ctx, input);
             },
-        };
+
+            accountLocalSignin(
+                parent: unknown,
+                { input }: { input: LocalSigninInput },
+                ctx: OhpGqlContext
+            ): Promise<SigninResult | null> {
+                return ctx.runtime.control.account.localSignin(ctx, input);
+            },
+
+            accountGoogleSignin(
+                parent: unknown,
+                { input }: { input: GoogleSigninInput },
+                ctx: OhpGqlContext
+            ): Promise<SigninResult | null> {
+                return ctx.runtime.control.account.googleSignin(ctx, input);
+            },
+        },
     },
 };

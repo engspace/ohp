@@ -1,9 +1,15 @@
-import { IResolvers } from 'apollo-server-koa';
 import gql from 'graphql-tag';
 import { User, IdOr } from '@engspace/core';
-import { GqlContext } from '@engspace/server-api';
 import { Organization, isOrganization } from '@ohp/core';
-import { OhpControllerSet } from '../control';
+import { OhpGqlContext } from '.';
+
+async function selfOrg(
+    ctx: OhpGqlContext,
+    organization: IdOr<Organization>
+): Promise<Organization> {
+    if (isOrganization(organization)) return organization;
+    return ctx.runtime.control.organization.byId(ctx, organization.id);
+}
 
 export default {
     typeDefs: gql`
@@ -24,37 +30,28 @@ export default {
             organizations(includeSelf: Boolean = true): [Organization!]
         }
     `,
-    buildResolvers(control: OhpControllerSet): IResolvers {
-        async function selfOrg(
-            ctx: GqlContext,
-            organization: IdOr<Organization>
-        ): Promise<Organization> {
-            if (isOrganization(organization)) return organization;
-            return control.organization.byId(ctx, organization.id);
-        }
 
-        return {
-            User: {
-                async organization(
-                    { organization }: User,
-                    args,
-                    ctx: GqlContext
-                ): Promise<Organization> {
-                    return selfOrg(ctx, organization);
-                },
-
-                async organizations(
-                    { id, organization }: User,
-                    { includeSelf }: { includeSelf: boolean },
-                    ctx: GqlContext
-                ): Promise<Organization[]> {
-                    const self = [];
-                    if (includeSelf) {
-                        self.push(await selfOrg(ctx, organization));
-                    }
-                    return [...self, ...(await control.organization.byUserId(ctx, id))];
-                },
+    resolvers: {
+        User: {
+            async organization(
+                { organization }: User,
+                args: unknown,
+                ctx: OhpGqlContext
+            ): Promise<Organization> {
+                return selfOrg(ctx, organization);
             },
-        };
+
+            async organizations(
+                { id, organization }: User,
+                { includeSelf }: { includeSelf: boolean },
+                ctx: OhpGqlContext
+            ): Promise<Organization[]> {
+                const self = [];
+                if (includeSelf) {
+                    self.push(await selfOrg(ctx, organization));
+                }
+                return [...self, ...(await ctx.runtime.control.organization.byUserId(ctx, id))];
+            },
+        },
     },
 };

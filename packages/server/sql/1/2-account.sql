@@ -26,4 +26,3 @@ CREATE TABLE account (
 );
 
 CREATE INDEX account_refresh_token ON account USING HASH(refresh_token);
-

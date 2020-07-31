@@ -75,6 +75,19 @@ export interface OrganizationInput {
     description: string;
 }
 
+export interface OrganizationMember {
+    id: Id;
+    organization: IdOr<Organization>;
+    user: IdOr<User>;
+    roles: string[];
+}
+
+export interface OrganizationMemberInput {
+    organizationId: Id;
+    userId: Id;
+    roles: string[];
+}
+
 declare module '@engspace/core' {
     export interface User {
         organization: IdOr<Organization>;

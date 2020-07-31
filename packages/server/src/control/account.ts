@@ -2,7 +2,7 @@ import { UserInputError, ForbiddenError } from 'apollo-server-koa';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import validator from 'validator';
-import { User } from '@engspace/core';
+import { User, UserInput } from '@engspace/core';
 import { signJwt } from '@engspace/server-api';
 import { Account, AccountType, TokenPayload, SigninResult } from '@ohp/core';
 import { OhpKoaMiddleware, OhpContext } from '..';
@@ -47,6 +47,33 @@ function genBearerToken(user: User, picture: string): Promise<string> {
     });
 }
 
+async function createUserWithOrg(
+    ctx: OhpContext,
+    { name, email, fullName }: Omit<UserInput, 'organizationId'>
+): Promise<User> {
+    const {
+        db,
+        runtime: { dao },
+    } = ctx;
+    const org = await dao.organization.create(db, {
+        name,
+        description: `organization for user ${name}`,
+    });
+    const user = await dao.user.create(db, {
+        organizationId: org.id,
+        name,
+        email,
+        fullName,
+    });
+    await dao.organizationMember.create(db, {
+        organizationId: org.id,
+        userId: user.id,
+        roles: ['self'],
+    });
+    user.organization = org;
+    return user;
+}
+
 export class AccountControl {
     async createLocal(
         ctx: OhpContext,
@@ -64,16 +91,7 @@ export class AccountControl {
         // all clear, we create an organization and a user, an inactive account and we send an email
         const { dao } = ctx.runtime;
         return ctx.db.transaction(async (db) => {
-            const org = await dao.organization.create(db, {
-                name,
-                description: `organization for user ${name}`,
-            });
-            const user = await dao.user.create(db, {
-                organizationId: org.id,
-                name,
-                email,
-                fullName,
-            });
+            const user = await createUserWithOrg(ctx, { name, email, fullName });
             const account = await dao.account.createLocal(db, {
                 userId: user.id,
                 password,
@@ -144,12 +162,7 @@ export class AccountControl {
             }
             const { email, name } = payload;
             await db.transaction(async (db) => {
-                const org = await dao.organization.create(db, {
-                    name: registerPseudo,
-                    description: `organization for user ${name}`,
-                });
-                user = await ctx.runtime.dao.user.create(db, {
-                    organizationId: org.id,
+                user = await createUserWithOrg(ctx, {
                     name: registerPseudo,
                     email,
                     fullName: name,

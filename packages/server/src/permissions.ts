@@ -9,12 +9,27 @@ const descriptors: OhpRoleDescriptors = {
                 'project.read',
                 'partfamily.read',
                 'change.read',
+                'org.read',
+                'orgmember.read',
             ],
+        },
+        user: {
+            permissions: ['org.create'],
         },
     },
     organization: {
+        admin: {
+            permissions: [
+                'project.create',
+                'project.update',
+                'orgmember.create',
+                'orgmember.update',
+                'orgmember.delete',
+            ],
+        },
         self: {
-            permissions: ['project.create', 'project.update'],
+            inherits: 'admin',
+            permissions: [],
         },
     },
     project: {

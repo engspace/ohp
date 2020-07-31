@@ -26,16 +26,9 @@ export default {
     level: 1,
     promote: [
         ...esMigrationSet[1].promote,
-        sqlOperation.stmt({
-            stmt: sql`
-                CREATE TABLE organization (
-                    id serial PRIMARY KEY,
-                    name text NOT NULL,
-                    description text NOT NULL,
-
-                    UNIQUE(name)
-                )
-            `,
+        sqlOperation.file({
+            path: ohpTreePath('sql/1/1-organization.sql'),
+            stmtSplit: ';',
         }),
         sqlOperation.func({
             func: augmentEngspace,

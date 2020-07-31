@@ -1422,12 +1422,13 @@
   dependencies:
     eslint-visitor-keys "^1.1.0"
 
-"@vue/apollo-composable@^4.0.0-alpha.8":
-  version "4.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@vue/apollo-composable/-/apollo-composable-4.0.0-alpha.8.tgz#6e82a64b1f9637941579aa560defbca3765401ba"
-  integrity sha512-d+9Uigio43C13ex/FfvJ6oaB3YjNUvIc91jSix4PfJERcCPtCeLlVHYinX2MMv40va6gY9sC6GN6QzL5o/80uQ==
+"@vue/apollo-composable@^4.0.0-alpha.10":
+  version "4.0.0-alpha.10"
+  resolved "https://registry.yarnpkg.com/@vue/apollo-composable/-/apollo-composable-4.0.0-alpha.10.tgz#17ad81552f55adde205cad982560ff120e92da87"
+  integrity sha512-PfbUFC+vCjtaRlhYJXekBD9x8yq/JGc/l0J9pEqvE5ZNAE5t6xUsSSdxiWt5bGo08slcdvVno7btydUWnIddBg==
   dependencies:
     throttle-debounce "^2.1.0"
+    vue-demi latest
 
 "@vue/babel-helper-vue-jsx-merge-props@^1.0.0":
   version "1.0.0"
@@ -1664,12 +1665,12 @@
   optionalDependencies:
     prettier "^1.18.2"
 
-"@vue/composition-api@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@vue/composition-api/-/composition-api-0.5.0.tgz#2dbaa02a5d1f5d0d407d53d5529fe444aa8362f3"
-  integrity sha512-9QDFWq7q839G1CTTaxeruPOTrrVOPSaVipJ2TxxK9QAruePNTHOGbOOFRpc8WLl4YPsu1/c29yBhMVmrXz8BZw==
+"@vue/composition-api@^1.0.0-beta.6":
+  version "1.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@vue/composition-api/-/composition-api-1.0.0-beta.6.tgz#d526b31f09acdffd0e9424c53cd9f8ffaef10408"
+  integrity sha512-Gz7w4bALSPkM37AbQDZubXjbRs850GwKeZr5bUFXrhW2MuyvS6r9euKWMAu/jwJmNaVc4ZLYaGLjNDQrGcHGGw==
   dependencies:
-    tslib "^1.9.3"
+    tslib "^2.0.0"
 
 "@vue/eslint-config-prettier@^6.0.0":
   version "6.0.0"
@@ -10261,6 +10262,11 @@ tslib@^1.10.0, tslib@^1.8.0, tslib@^1.8.1, tslib@^1.9.0, tslib@^1.9.3:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.13.0.tgz#c881e13cc7015894ed914862d276436fa9a47043"
   integrity sha512-i/6DQjL8Xf3be4K/E6Wgpekn5Qasl1usyw++dAA35Ue5orEn65VIxOA+YvNNl9HV3qv70T7CNwjODHZrLwvd1Q==
 
+tslib@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.0.0.tgz#18d13fc2dce04051e20f074cc8387fd8089ce4f3"
+  integrity sha512-lTqkx847PI7xEDYJntxZH89L2/aXInsyF2luSafe/+0fHOMjlBNXdH6th7f70qxLDhul7KZK0zC8V5ZIyHl0/g==
+
 tslint@^5.20.1:
   version "5.20.1"
   resolved "https://registry.yarnpkg.com/tslint/-/tslint-5.20.1.tgz#e401e8aeda0152bc44dd07e614034f3f80c67b7d"
@@ -10665,6 +10671,11 @@ vue-cli-plugin-vuetify@~2.0.6:
     null-loader "^3.0.0"
     semver "^7.1.2"
     shelljs "^0.8.3"
+
+vue-demi@latest:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.1.4.tgz#640207ebc8244cd994ddc06c86ad3bfc16b4b7f4"
+  integrity sha512-8Hu4A9jLGK+SIIetMamf81eT2m9QUsiPaXSkiDTuPo9qEhSt56OCH/X+kmmg5Pg6kfzdTzKvvjlDBKWd41A7pg==
 
 vue-eslint-parser@^7.0.0:
   version "7.1.0"

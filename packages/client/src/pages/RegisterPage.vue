@@ -83,7 +83,7 @@
                             app
                             color="success"
                             multi-line
-                            :timeout="10000"
+                            :timeout="15000"
                             @input="confirmation = ''"
                         >
                             Your account has been created but is inactive. An

@@ -1,8 +1,12 @@
 <template>
     <v-container>
         <v-row align="center" justify="center">
-            <v-column>
+            <v-col>
                 <v-form v-model="formValid">
+                    <v-card>
+                        <v-card-title>
+                            Create project
+                            <v-spacer></v-spacer>
                     <v-select
                         v-model="selectedOrg"
                         label="Organization"
@@ -12,7 +16,13 @@
                     <v-alert v-if="organizationFetchError" type="error">
                         {{ organizationFetchError }}
                     </v-alert>
-                    <es-project-edit v-model="project"></es-project-edit>
+                        </v-card-title>
+                        <v-card-text>
+                            <es-project-edit
+                                v-model="project"
+                            ></es-project-edit>
+                        </v-card-text>
+                        <v-card-actions>
                     <v-btn
                         color="success"
                         :disabled="!formValid"
@@ -23,8 +33,10 @@
                     <v-alert v-if="error" type="error">
                         {{ error }}
                     </v-alert>
+                        </v-card-actions>
+                    </v-card>
                 </v-form>
-            </v-column>
+            </v-col>
         </v-row>
     </v-container>
 </template>

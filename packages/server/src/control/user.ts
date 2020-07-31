@@ -1,16 +1,16 @@
 import { ForbiddenError, UserInputError } from 'apollo-server-koa';
 import validator from 'validator';
 import { Id, UserInput, User } from '@engspace/core';
-import { UserControl, ApiContext } from '@engspace/server-api';
-import { OhpDaoSet } from '../dao';
+import { UserControl } from '@engspace/server-api';
+import { OhpContext } from '..';
 
-export class OhpUserControl extends UserControl<OhpDaoSet> {
-    constructor(dao: OhpDaoSet) {
-        super(dao);
-    }
-
-    async update(ctx: ApiContext, userId: Id, input: UserInput): Promise<User> {
-        const self = userId === ctx.auth.userId;
+export class OhpUserControl extends UserControl {
+    async update(
+        { db, auth, runtime: { dao } }: OhpContext,
+        userId: Id,
+        input: UserInput
+    ): Promise<User> {
+        const self = userId === auth.userId;
         if (!self) {
             throw new ForbiddenError('can only update self, not others');
         }
@@ -18,15 +18,15 @@ export class OhpUserControl extends UserControl<OhpDaoSet> {
             throw new UserInputError(`"${input.email}" is not a valid email address`);
         }
 
-        const user = await this.dao.user.byId(ctx.db, userId);
+        const user = await dao.user.byId(db, userId);
         if (user.name === input.name) {
-            return this.dao.user.update(ctx.db, userId, input);
+            return dao.user.update(db, userId, input);
         }
 
-        return ctx.db.transaction((db) => {
+        return db.transaction((transacDb) => {
             return Promise.all([
-                this.dao.organization.rename(db, { from: user.name, to: input.name }),
-                this.dao.user.update(db, userId, input),
+                dao.organization.rename(transacDb, { from: user.name, to: input.name }),
+                dao.user.update(transacDb, userId, input),
             ])[1];
         });
     }

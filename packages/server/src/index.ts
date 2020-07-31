@@ -81,7 +81,7 @@ export type OhpServerRuntime = EsServerRuntime<OhpDaoSet, OhpControllerSet>;
 const rolePolicies = buildOhpRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
-const control = buildOhpControllerSet(dao);
+const control = buildOhpControllerSet();
 const runtime: OhpServerRuntime = {
     pool,
     dao,

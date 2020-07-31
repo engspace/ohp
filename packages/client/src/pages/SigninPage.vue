@@ -101,19 +101,20 @@ export default defineComponent({
 
         const { signIn: authSignIn } = useAuth();
 
-        onDone(
-            ({
-                data: {
-                    accountLocalSignin: { bearerToken, refreshToken },
-                },
-            }) => {
-                email.value = '';
-                password.value = '';
-                ((form.value as unknown) as any)?.resetValidation();
+        onDone((res) => {
+            email.value = '';
+            password.value = '';
+            ((form.value as unknown) as any)?.resetValidation();
+            if (res) {
+                const {
+                    data: {
+                        accountLocalSignin: { bearerToken, refreshToken },
+                    },
+                } = res;
                 authSignIn(bearerToken, refreshToken);
                 root.$router.push('/');
             }
-        );
+        });
 
         return {
             form,

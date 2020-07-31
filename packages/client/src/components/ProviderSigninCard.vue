@@ -90,16 +90,16 @@ export default defineComponent({
             error,
         } = useOhpGoogleSignIn(pseudo);
 
-        googleOnDone(
-            ({
+        googleOnDone((res) => {
+            if (!res) return;
+            const {
                 data: {
                     accountGoogleSignin: { bearerToken, refreshToken },
                 },
-            }) => {
-                signIn(bearerToken, refreshToken);
-                // redirect
-            }
-        );
+            } = res;
+            signIn(bearerToken, refreshToken);
+            // redirect
+        });
 
         return {
             form,

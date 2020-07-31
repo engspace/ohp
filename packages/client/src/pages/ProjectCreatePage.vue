@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts">
-import { useMutation, useQuery, useResult } from '@vue/apollo-composable';
+import { useMutation, useQuery } from '@vue/apollo-composable';
 import {
     defineComponent,
     ref,
@@ -87,8 +87,8 @@ export default defineComponent({
         });
         const organizationFetchError = computed(() => orgError.value?.message);
         const selectedOrg = ref('');
-        onOrgResult(({ data }) => {
-            selectedOrg.value = data?.user?.organization?.id;
+        onOrgResult((res) => {
+            selectedOrg.value = res?.data?.user?.organization?.id;
         });
 
         const project: Ref<Partial<ProjectInput>> = ref({});

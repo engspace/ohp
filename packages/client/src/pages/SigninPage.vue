@@ -41,14 +41,14 @@
                     </v-card-text>
                     <v-card-actions>
                         <v-btn
-                            color="primary"
+                            color="success"
                             :disabled="!canSignIn"
                             @click="signIn"
                             >Sign-in</v-btn
                         >
                         <v-spacer></v-spacer>
                         <v-subheader>Not registered yet?</v-subheader>
-                        <v-btn to="/register" color="secondary">Register</v-btn>
+                        <v-btn to="/register">Register</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-col>

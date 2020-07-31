@@ -8,7 +8,7 @@
         <v-row align="center" justify="center">
             <v-col cols="12" sm="8" md="5" xl="3">
                 <v-card :loading="registerLoading">
-                    <v-toolbar dark color="secondary" flat>
+                    <v-toolbar dark color="primary" flat>
                         <v-toolbar-title>
                             Register with e-mail and password
                         </v-toolbar-title>
@@ -77,7 +77,7 @@
                         >
                         <v-spacer></v-spacer>
                         <v-subheader>Already registered?</v-subheader>
-                        <v-btn to="/signin" color="primary">Sign-in</v-btn>
+                        <v-btn to="/signin">Sign-in</v-btn>
                         <v-snackbar
                             :value="!!confirmation"
                             app

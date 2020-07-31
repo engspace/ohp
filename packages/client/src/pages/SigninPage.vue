@@ -69,7 +69,7 @@ export default defineComponent({
     components: {
         ProviderSigninCard,
     },
-    setup() {
+    setup(props, { root }) {
         const form = ref(null);
         const email = ref('');
         const password = ref('');
@@ -111,7 +111,7 @@ export default defineComponent({
                 password.value = '';
                 ((form.value as unknown) as any)?.resetValidation();
                 authSignIn(bearerToken, refreshToken);
-                // redirect
+                root.$router.push('/');
             }
         );
 

@@ -42,7 +42,8 @@
         "rimraf": "^3.0.2",
         "typescript": "^3.9.6"
     },
-    "main": "dist/index",
+    "main": "dist/main",
+    "module": "src/index",
     "repository": "https://github.com/engspace/ohp",
     "scripts": {
         "build": "tsc -b .",

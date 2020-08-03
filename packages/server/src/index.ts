@@ -26,18 +26,14 @@ import {
     DbConnConfig,
     DbPool,
     DbPoolConfig,
-    DbPreparationConfig,
-    executeSqlFile,
-    syncSchema,
-    prepareDb,
     ServerConnConfig,
+    DbPreparationConfig,
 } from '@engspace/server-db';
 import { OhpRolePolicies, buildOhpRolePolicies, TokenPayload } from '@ohp/core';
 import { buildOhpControlSet, OhpControlSet } from './control';
 import { buildOhpDaoSet, OhpDaoSet } from './dao';
 import env from './env';
 import { buildOhpGqlSchema } from './graphql';
-import ohpMigrations from './migrations';
 import roleDescriptors from './permissions';
 
 export const ohpDbSchemaLevel = 1;
@@ -54,14 +50,14 @@ const dbConnConfig: DbConnConfig = {
     name: env.dbName,
 };
 
-const dbPreparationConfig: DbPreparationConfig = {
+const dbPoolConfig: DbPoolConfig = {
+    dbConnString: connectionString(dbConnConfig),
+};
+
+export const dbPreparationConfig: DbPreparationConfig = {
     serverConnString: connectionString(serverConnConfig),
     name: dbConnConfig.name,
     formatDb: env.dbFormat === 'Yes_Im_Sure',
-};
-
-const dbPoolConfig: DbPoolConfig = {
-    dbConnString: connectionString(dbConnConfig),
 };
 
 export type OhpKoaState = EsKoaState;
@@ -82,12 +78,12 @@ const rolePolicies = buildOhpRolePolicies(roleDescriptors);
 const pool: DbPool = createDbPool(dbPoolConfig);
 const dao = buildOhpDaoSet();
 const control = buildOhpControlSet();
-const runtime: OhpServerRuntime = {
+export const runtime: OhpServerRuntime = {
     pool,
     dao,
     control,
 };
-const config: OhpServerConfig = {
+export const config: OhpServerConfig = {
     rolePolicies,
     storePath: env.storePath,
     naming: new StaticEsNaming({
@@ -120,7 +116,7 @@ const checkBearerTokenMiddleware: OhpKoaMiddleware = async (ctx, next) => {
     return next();
 };
 
-function buildServerApp(): OhpKoa {
+export function buildServerApp(): OhpKoa {
     const app: OhpKoa = new Koa();
     app.context.runtime = runtime;
     app.context.config = config;
@@ -147,30 +143,3 @@ function buildServerApp(): OhpKoa {
 
     return app;
 }
-
-prepareDb(dbPreparationConfig)
-    .then(async () => {
-        await pool.transaction((db) => syncSchema(db, ohpDbSchemaLevel, ohpMigrations));
-        if (env.devInitScript) {
-            if (env.devInitScript.endsWith('.sql')) {
-                await pool.transaction((db) => {
-                    console.log('executing ' + env.devInitScript);
-                    return executeSqlFile(db, {
-                        path: env.devInitScript,
-                        stmtSplit: ';',
-                    });
-                });
-            } else {
-                const { default: initScript } = await import(env.devInitScript);
-                await initScript(runtime, config);
-            }
-        }
-        const app = buildServerApp();
-        app.listen(env.serverPort, () => {
-            console.log(`Demo API listening to port ${env.serverPort}`);
-        });
-    })
-    .catch((err) => {
-        console.error('error during the demo app');
-        console.error(err);
-    });

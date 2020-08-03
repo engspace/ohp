@@ -116,7 +116,7 @@ const checkBearerTokenMiddleware: OhpKoaMiddleware = async (ctx, next) => {
     return next();
 };
 
-export function buildServerApp(): OhpKoa {
+export function buildOhpServerApp(): OhpKoa {
     const app: OhpKoa = new Koa();
     app.context.runtime = runtime;
     app.context.config = config;

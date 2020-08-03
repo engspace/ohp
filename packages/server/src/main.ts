@@ -1,7 +1,7 @@
 import { prepareDb, syncSchema, executeSqlFile } from '@engspace/server-db';
 import env from './env';
 import ohpMigrations from './migrations';
-import { buildServerApp, dbPreparationConfig, runtime, config, ohpDbSchemaLevel } from '.';
+import { buildOhpServerApp, dbPreparationConfig, runtime, config, ohpDbSchemaLevel } from '.';
 
 prepareDb(dbPreparationConfig)
     .then(async () => {
@@ -21,7 +21,7 @@ prepareDb(dbPreparationConfig)
                 await initScript(runtime, config);
             }
         }
-        const app = buildServerApp();
+        const app = buildOhpServerApp();
         app.listen(env.serverPort, () => {
             console.log(`Demo API listening to port ${env.serverPort}`);
         });

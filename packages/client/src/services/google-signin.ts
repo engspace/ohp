@@ -1,5 +1,5 @@
 import { onMounted, ref, provide, inject, Ref } from '@vue/composition-api';
-import { useScript } from './script';
+import { useScript } from './dom';
 
 export type GoogleUser = gapi.auth2.GoogleUser;
 export type SigninOptions = gapi.auth2.SigninOptions;

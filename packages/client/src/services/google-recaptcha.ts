@@ -1,5 +1,5 @@
 import { computed, onMounted, ref } from '@vue/composition-api';
-import { useScript } from './script';
+import { useScript } from './dom';
 
 declare global {
     interface Window {

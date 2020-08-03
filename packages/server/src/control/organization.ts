@@ -6,6 +6,7 @@ import {
     OrganizationInput,
     OrganizationMember,
     OrganizationMemberInput,
+    isOrganization,
 } from '@ohp/core';
 import { OhpContext } from '..';
 import { assertUserOrOrganizationPerm } from './helper';
@@ -37,17 +38,24 @@ export class OrganizationControl {
 
     async byName(ctx: OhpContext, name: string): Promise<Organization> {
         assertUserPerm(ctx, 'org.read');
-        const { db } = ctx;
-        return ctx.runtime.dao.organization.byName(db, name);
+        const {
+            db,
+            runtime: { dao },
+        } = ctx;
+        return dao.organization.byName(db, name);
     }
 
-    async byUserId(ctx: OhpContext, userId: Id): Promise<Organization[]> {
-        assertUserPerm(ctx, 'org.read');
-        const { db } = ctx;
-        return ctx.runtime.dao.organization.byUserId(db, userId);
+    async bySelfUserId(ctx: OhpContext, selfUserId: string): Promise<OrganizationMember> {
+        assertUserPerm(ctx, 'orgmember.read');
+        const {
+            db,
+            runtime: { dao },
+        } = ctx;
+        const org = await dao.organization.bySelfUserId(db, selfUserId);
+        return dao.organizationMember.byOrganizationAndUserId(db, org.id, selfUserId);
     }
 
-    async addMember(ctx: OhpContext, input: OrganizationMemberInput): Promise<OrganizationMember> {
+    async memberAdd(ctx: OhpContext, input: OrganizationMemberInput): Promise<OrganizationMember> {
         await assertUserOrOrganizationPerm(ctx, input.organizationId, 'member.create');
         const {
             db,
@@ -78,25 +86,29 @@ export class OrganizationControl {
         return dao.organizationMember.byOrganizationAndUserId(db, organizationId, userId);
     }
 
-    membersByOrganizationId(ctx: OhpContext, projId: Id): Promise<OrganizationMember[]> {
+    membersByOrganizationId(ctx: OhpContext, orgId: Id): Promise<OrganizationMember[]> {
         assertUserPerm(ctx, 'orgmember.read');
         const {
             db,
             runtime: { dao },
         } = ctx;
-        return dao.organizationMember.byOrganizationId(db, projId);
+        return dao.organizationMember.byOrganizationId(db, orgId);
     }
 
-    membersByUserId(ctx: OhpContext, userId: Id): Promise<OrganizationMember[]> {
+    membersByUserId(
+        ctx: OhpContext,
+        userId: Id,
+        options: { includeSelf: boolean }
+    ): Promise<OrganizationMember[]> {
         assertUserPerm(ctx, 'orgmember.read');
         const {
             db,
             runtime: { dao },
         } = ctx;
-        return dao.organizationMember.byUserId(db, userId);
+        return dao.organizationMember.byUserId(db, userId, options);
     }
 
-    async updateMemberRoles(
+    async memberUpdate(
         ctx: OhpContext,
         memberId: Id,
         roles: string[]
@@ -108,7 +120,7 @@ export class OrganizationControl {
         const mem = await dao.organizationMember.byId(db, memberId);
         await assertUserOrOrganizationPerm(ctx, mem.organization.id, 'orgmember.update');
         const includesSelf = roles.includes('self');
-        const isSelf = await this.isSelf(ctx, mem.organization.id, mem.user.id);
+        const isSelf = await this.isSelf(ctx, mem);
         if (isSelf && !includesSelf) {
             throw new UserInputError('Cannot remove role "self"');
         } else if (!isSelf && includesSelf) {
@@ -117,14 +129,14 @@ export class OrganizationControl {
         return dao.organizationMember.updateRolesById(db, memberId, roles);
     }
 
-    async deleteMember(ctx: OhpContext, memberId: Id): Promise<OrganizationMember> {
+    async memberRemove(ctx: OhpContext, memberId: Id): Promise<OrganizationMember> {
         const {
             db,
             runtime: { dao },
         } = ctx;
         const mem = await dao.organizationMember.byId(db, memberId);
         await assertUserOrOrganizationPerm(ctx, mem.organization.id, 'orgmember.delete');
-        if (await this.isSelf(ctx, mem.organization.id, mem.user.id)) {
+        if (await this.isSelf(ctx, mem)) {
             throw new UserInputError('Cannot remove user from self organization');
         }
         return dao.organizationMember.deleteById(db, memberId);
@@ -132,10 +144,11 @@ export class OrganizationControl {
 
     private async isSelf(
         { db, runtime: { dao } }: OhpContext,
-        organizationId: Id,
-        userId: Id
+        mem: OrganizationMember
     ): Promise<boolean> {
-        const user = await dao.user.byId(db, userId);
-        return user.organization.id === organizationId;
+        if (!isOrganization(mem.organization)) {
+            mem.organization = await dao.organization.byId(db, mem.organization.id);
+        }
+        return (mem.organization as Organization).selfUser?.id === mem.user.id;
     }
 }

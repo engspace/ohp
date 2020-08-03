@@ -55,22 +55,21 @@ async function createUserWithOrg(
         db,
         runtime: { dao },
     } = ctx;
-    const org = await dao.organization.create(db, {
-        name,
-        description: `organization for user ${name}`,
-    });
     const user = await dao.user.create(db, {
-        organizationId: org.id,
         name,
         email,
         fullName,
+    });
+    const org = await dao.organization.create(db, {
+        name,
+        description: `organization for user ${name}`,
+        selfUserId: user.id,
     });
     await dao.organizationMember.create(db, {
         organizationId: org.id,
         userId: user.id,
         roles: ['self'],
     });
-    user.organization = org;
     return user;
 }
 

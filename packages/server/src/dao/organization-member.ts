@@ -67,12 +67,26 @@ export class OrganizationMemberDao extends DaoBase<OrganizationMember, Row> {
     /**
      * Get all members for a user id.
      * This is used to fetch all organizaions a user is involved in.
+     * If includeSelf is false, self user organization is filtered out.
      */
-    async byUserId(db: Db, userId: Id): Promise<OrganizationMember[]> {
-        const rows = await db.any<Row>(sql`
-            SELECT ${this.rowToken} FROM organization_member
-            WHERE user_id = ${userId}
-        `);
+    async byUserId(
+        db: Db,
+        userId: Id,
+        { includeSelf = true }: { includeSelf: boolean }
+    ): Promise<OrganizationMember[]> {
+        let rows: Row[];
+        if (includeSelf) {
+            rows = await db.any(sql`
+                SELECT ${rowToken} FROM organization_member
+                WHERE user_id = ${userId}
+            `);
+        } else {
+            rows = await db.many(sql`
+                SELECT ${rowToken} FROM organization_member
+                LEFT OUTER JOIN organization AS o ON organization_id = o.id
+                WHERE user_id = ${userId} AND o.self_user_id <> user_id
+            `);
+        }
         return rows.map((r) => mapRow(r));
     }
 

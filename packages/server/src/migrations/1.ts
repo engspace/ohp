@@ -16,7 +16,7 @@ async function addOrgForeignKey(db: Db, table: string): Promise<void> {
 
 async function augmentEngspace(db: Db): Promise<void> {
     // Add organization as foreign key to tables
-    const orgTables = ['user', 'project', 'part_family', 'change_request', 'part'];
+    const orgTables = ['project', 'part_family', 'change_request', 'part'];
     for (const table of orgTables) {
         await addOrgForeignKey(db, table);
     }

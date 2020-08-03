@@ -68,11 +68,13 @@ export interface Organization {
     id: Id;
     name: string;
     description: string;
+    selfUser: IdOr<User>;
 }
 
 export interface OrganizationInput {
     name: string;
     description: string;
+    selfUserId: Id | null;
 }
 
 export interface OrganizationMember {
@@ -89,12 +91,6 @@ export interface OrganizationMemberInput {
 }
 
 declare module '@engspace/core' {
-    export interface User {
-        organization: IdOr<Organization>;
-    }
-    export interface UserInput {
-        organizationId: Id;
-    }
     export interface Project {
         organization: IdOr<Organization>;
     }

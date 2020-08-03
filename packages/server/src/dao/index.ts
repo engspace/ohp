@@ -3,7 +3,6 @@ import { AccountDao } from './account';
 import { OrganizationDao } from './organization';
 import { OrganizationMemberDao } from './organization-member';
 import { OhpProjectDao } from './project';
-import { OhpUserDao } from './user';
 
 export interface OhpDaoSet extends EsDaoSet {
     account: AccountDao;
@@ -13,7 +12,6 @@ export interface OhpDaoSet extends EsDaoSet {
 
 export function buildOhpDaoSet(): OhpDaoSet {
     const dao = buildEsDaoSet({
-        user: new OhpUserDao(),
         project: new OhpProjectDao(),
     });
     return {

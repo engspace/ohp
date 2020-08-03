@@ -1,15 +1,7 @@
 import gql from 'graphql-tag';
-import { User, IdOr } from '@engspace/core';
-import { Organization, isOrganization } from '@ohp/core';
+import { User } from '@engspace/core';
+import { OrganizationMember } from '@ohp/core';
 import { OhpGqlContext } from '.';
-
-async function selfOrg(
-    ctx: OhpGqlContext,
-    organization: IdOr<Organization>
-): Promise<Organization> {
-    if (isOrganization(organization)) return organization;
-    return ctx.runtime.control.organization.byId(ctx, organization.id);
-}
 
 export default {
     typeDefs: gql`
@@ -20,37 +12,40 @@ export default {
             """
             Organization that has the same name as the user (aka self organization)
             """
-            organization: Organization!
+            selfOrganization: OrganizationMember!
             """
             All organizations this user is associated with.
             includeSelf indicates whether to include the organization with
             the same name as the user.
             If self is included, it is in first position.
             """
-            organizations(includeSelf: Boolean = true): [Organization!]
+            organizations(includeSelf: Boolean = true): [OrganizationMember!]
         }
     `,
 
     resolvers: {
         User: {
-            async organization(
-                { organization }: User,
+            async selfOrganization(
+                { id }: User,
                 args: unknown,
                 ctx: OhpGqlContext
-            ): Promise<Organization> {
-                return selfOrg(ctx, organization);
+            ): Promise<OrganizationMember> {
+                const {
+                    runtime: { control },
+                } = ctx;
+                return control.organization.bySelfUserId(ctx, id);
             },
 
             async organizations(
-                { id, organization }: User,
-                { includeSelf }: { includeSelf: boolean },
+                { id }: User,
+                args: { includeSelf: boolean },
                 ctx: OhpGqlContext
-            ): Promise<Organization[]> {
-                const self = [];
-                if (includeSelf) {
-                    self.push(await selfOrg(ctx, organization));
-                }
-                return [...self, ...(await ctx.runtime.control.organization.byUserId(ctx, id))];
+            ): Promise<OrganizationMember[]> {
+                const {
+                    runtime: { control },
+                } = ctx;
+
+                return control.organization.membersByUserId(ctx, id, args);
             },
         },
     },

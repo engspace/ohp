@@ -4,7 +4,10 @@ CREATE TABLE organization (
     name text NOT NULL,
     description text NOT NULL,
 
-    UNIQUE(name)
+    self_user_id integer,
+
+    UNIQUE(name),
+    FOREIGN KEY(self_user_id) REFERENCES "user"(id)
 );
 
 CREATE TABLE organization_member(

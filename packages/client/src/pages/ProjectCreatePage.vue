@@ -7,15 +7,15 @@
                         <v-card-title>
                             Create project
                             <v-spacer></v-spacer>
-                    <v-select
-                        v-model="selectedOrg"
-                        label="Organization"
-                        :items="organizations"
-                        class="required"
-                    ></v-select>
-                    <v-alert v-if="organizationFetchError" type="error">
-                        {{ organizationFetchError }}
-                    </v-alert>
+                            <v-select
+                                v-model="selectedOrg"
+                                label="Organization"
+                                :items="organizations"
+                                class="required"
+                            ></v-select>
+                            <v-alert v-if="organizationFetchError" type="error">
+                                {{ organizationFetchError }}
+                            </v-alert>
                         </v-card-title>
                         <v-card-text>
                             <es-project-edit
@@ -23,16 +23,16 @@
                             ></es-project-edit>
                         </v-card-text>
                         <v-card-actions>
-                    <v-btn
-                        color="success"
-                        :disabled="!formValid"
-                        @click="createProject"
-                    >
-                        <v-icon>mdi-plus</v-icon> Create
-                    </v-btn>
-                    <v-alert v-if="error" type="error">
-                        {{ error }}
-                    </v-alert>
+                            <v-btn
+                                color="success"
+                                :disabled="!formValid"
+                                @click="createProject"
+                            >
+                                <v-icon>mdi-plus</v-icon> Create
+                            </v-btn>
+                            <v-alert v-if="error" type="error">
+                                {{ error }}
+                            </v-alert>
                         </v-card-actions>
                     </v-card>
                 </v-form>

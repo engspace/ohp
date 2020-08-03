@@ -1,3 +1,11 @@
+import { watchEffect, ComputedRef } from '@vue/composition-api';
+
+export function useComputedDocTitle(title: ComputedRef<string>): void {
+    watchEffect(() => {
+        document.title = title.value;
+    });
+}
+
 export interface ScriptOptions {
     src: string;
     defer?: boolean;

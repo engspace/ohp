@@ -56,6 +56,7 @@ export default {
                 args: unknown,
                 ctx: OhpGqlContext
             ): Promise<User> {
+                if (!selfUser) return null;
                 if (isUser(selfUser)) return selfUser;
                 return ctx.loaders.user.load(selfUser.id);
             },

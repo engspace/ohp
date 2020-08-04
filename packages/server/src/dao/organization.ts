@@ -9,7 +9,7 @@ interface Row {
     id: RowId;
     name: string;
     description: string;
-    selfUserId: RowId;
+    selfUserId?: RowId;
 }
 
 function mapRow({ id, name, description, selfUserId }: Row): Organization {
@@ -47,7 +47,7 @@ export class OrganizationDao extends DaoBase<Organization, Row> {
                 name, description, self_user_id
             )
             VALUES (
-                ${name}, ${description}, ${selfUserId}
+                ${name}, ${description}, ${selfUserId || null}
             )
             RETURNING ${rowToken}
         `);

@@ -20,7 +20,7 @@ export class OrganizationControl {
         } = ctx;
         return db.transaction(async (transacDb) => {
             const org = await ctx.runtime.dao.organization.create(transacDb, input);
-            // adding user as owner
+            // adding user as admin
             await ctx.runtime.dao.organizationMember.create(transacDb, {
                 organizationId: org.id,
                 userId,

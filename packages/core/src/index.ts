@@ -68,13 +68,13 @@ export interface Organization {
     id: Id;
     name: string;
     description: string;
-    selfUser: IdOr<User>;
+    selfUser?: IdOr<User>;
 }
 
 export interface OrganizationInput {
     name: string;
     description: string;
-    selfUserId: Id | null;
+    selfUserId?: Id;
 }
 
 export interface OrganizationMember {

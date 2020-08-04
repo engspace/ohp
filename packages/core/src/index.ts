@@ -68,7 +68,10 @@ export interface Organization {
     id: Id;
     name: string;
     description: string;
+
     selfUser?: IdOr<User>;
+
+    members?: OrganizationMember[];
 }
 
 export interface OrganizationInput {

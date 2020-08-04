@@ -14,13 +14,10 @@ import 'mocha';
 import { AuthToken, HasId } from '@engspace/core';
 import { buildTestGqlServer } from '@engspace/server-api';
 import { Db, syncSchema, prepareDb, passwordLogin } from '@engspace/server-db';
-import { buildOhpServerApp, runtime, config, dbPreparationConfig, ohpDbSchemaLevel } from '../src';
-import env from '../src/env';
+import { runtime, config, dbPreparationConfig, ohpDbSchemaLevel } from '../src';
 import { buildOhpGqlSchema } from '../src/graphql';
 import ohpMigrations from '../src/migrations';
 import { OhpTestHelpers } from './helpers';
-
-console.log(env);
 
 events.EventEmitter.defaultMaxListeners = 100;
 
@@ -28,7 +25,6 @@ chai.use(chaiAsPromised);
 chai.use(chaiHttp);
 chai.use(chaiSubset);
 
-export const app = buildOhpServerApp();
 export const pool = runtime.pool;
 export const dao = runtime.dao;
 

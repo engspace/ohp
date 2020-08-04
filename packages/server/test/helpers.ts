@@ -1,33 +1,31 @@
 import { UserInput, User } from '@engspace/core';
-import { TestHelpers, DbPool, Db, Dict, asyncDictMap } from '@engspace/server-db';
-import { RoleOptions } from '@engspace/server-db/dist/dao/user';
+import {
+    TestHelpers,
+    DbPool,
+    Db,
+    Dict,
+    asyncDictMap,
+    esTableDeps,
+    RoleOptions,
+} from '@engspace/server-db';
+import { OrganizationInput, Organization } from '@ohp/core';
 import { OhpDaoSet } from '../src/dao';
 
-const tableDeps = {
+export interface OrgInputWithMembers extends OrganizationInput {
+    members: { user: User; roles?: string[] }[];
+}
+
+const ohpTableDeps = {
+    ...esTableDeps,
     user: [],
     account: ['user'],
     organization: ['user'],
     organization_member: ['user', 'organization'],
-    project: [],
-    project_member: ['user', 'project'],
-    project_member_role: ['project_member'],
-    part_family: [],
-    part: ['part_family', 'user'],
-    part_revision: ['part', 'change_request', 'user'],
-    part_validation: ['part_revision', 'user'],
-    part_approval: ['part_validation', 'user'],
-    change_request: ['user'],
-    change_part_create: ['change_request', 'part_family'],
-    change_part_fork: ['change_request', 'part'],
-    change_part_revision: ['change_request', 'part'],
-    change_review: ['change_request', 'user'],
-    document: ['user'],
-    document_revision: ['document', 'user'],
 };
 
 export class OhpTestHelpers extends TestHelpers<OhpDaoSet> {
     constructor(pool: DbPool, dao: OhpDaoSet) {
-        super(pool, dao, tableDeps);
+        super(pool, dao, ohpTableDeps);
     }
 
     async createUser(
@@ -79,5 +77,27 @@ export class OhpTestHelpers extends TestHelpers<OhpDaoSet> {
         opts: Partial<RoleOptions> = {}
     ): Promise<Dict<User>> {
         return asyncDictMap(input, (inp) => this.createUserWithSelfOrg(db, inp, opts));
+    }
+
+    async createOrg(db: Db, input: Partial<OrgInputWithMembers> = {}): Promise<Organization> {
+        const name = input.name || 'org';
+
+        const org = await this.dao.organization.create(db, {
+            name,
+            description: input.description || null,
+            selfUserId: input.selfUserId,
+        });
+        if (input.members) {
+            org.members = await Promise.all(
+                input.members.map(({ user, roles }) =>
+                    this.dao.organizationMember.create(db, {
+                        organizationId: org.id,
+                        userId: user.id,
+                        roles,
+                    })
+                )
+            );
+        }
+        return org;
     }
 }

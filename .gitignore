@@ -4,3 +4,4 @@ dist/
 .vscode/
 *.code-workspace
 *.env
+.nyc_output/

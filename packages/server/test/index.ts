@@ -50,8 +50,11 @@ before('Start-up DB and Server', async function () {
     await prepareDb(dbPreparationConfig);
     await runtime.pool.transaction(async (db) => {
         await syncSchema(db, ohpDbSchemaLevel, ohpMigrations);
-        await passwordLogin.buildSchema(db);
     });
+});
+
+after('Stop DB server', async function () {
+    await pool.end();
 });
 
 before('Create test store', async function () {

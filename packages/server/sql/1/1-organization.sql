@@ -18,6 +18,6 @@ CREATE TABLE organization_member(
 
     UNIQUE(organization_id, user_id),
 
-    FOREIGN KEY(organization_id) REFERENCES organization(id),
-    FOREIGN KEY(user_id) REFERENCES "user"(id)
+    FOREIGN KEY(organization_id) REFERENCES organization(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES "user"(id) ON DELETE CASCADE
 );

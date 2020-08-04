@@ -9,7 +9,7 @@ interface Row {
     id: RowId;
     organizationId: RowId;
     userId: RowId;
-    roles: string;
+    roles?: string;
 }
 
 function mapRow({ id, organizationId, userId, roles }: Row): OrganizationMember {
@@ -17,7 +17,7 @@ function mapRow({ id, organizationId, userId, roles }: Row): OrganizationMember 
         id: toId(id),
         organization: foreignKey(organizationId),
         user: foreignKey(userId),
-        roles: roles.split(';'),
+        roles: roles?.split(';'),
     };
 }
 
@@ -46,7 +46,7 @@ export class OrganizationMemberDao extends DaoBase<OrganizationMember, Row> {
             INSERT INTO organization_member(
                 organization_id, user_id, roles
             ) VALUES (
-                ${organizationId}, ${userId}, ${roles.join(';')}
+                ${organizationId}, ${userId}, ${roles?.join(';') || null}
             )
             RETURNING ${rowToken}
         `);

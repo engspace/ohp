@@ -1,9 +1,7 @@
-
 {
-  "diff": true,
-  "inlineDiff": true,
-  "slow": 100,
-  "require": ["ts-node/register"],
-  "spec": ["test/**/*.ts"],
-  "watch-files": ["src/**/*.ts", "test/**/*.ts"]
+    "diff": true,
+    "inlineDiff": true,
+    "require": ["ts-node/register"],
+    "spec": ["test/**/*.ts"],
+    "watch-files": ["src/**/*.ts", "test/**/*.ts"]
 }

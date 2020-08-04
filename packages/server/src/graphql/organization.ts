@@ -20,7 +20,17 @@ export default {
             id: ID!
             name: String!
             description: String!
+
+            """
+            User that has the same name than the organization.
+            Only defined for user's organizations.
+            """
             selfUser: User
+
+            """
+            Members of the organization.
+            """
+            members: [OrganizationMember!]
         }
 
         input OrganizationMemberInput {
@@ -59,6 +69,14 @@ export default {
                 if (!selfUser) return null;
                 if (isUser(selfUser)) return selfUser;
                 return ctx.loaders.user.load(selfUser.id);
+            },
+
+            async members(
+                { id }: Organization,
+                args: unknown,
+                ctx: OhpGqlContext
+            ): Promise<OrganizationMember[]> {
+                return ctx.runtime.control.organization.membersByOrganizationId(ctx, id);
             },
         },
         OrganizationMember: {

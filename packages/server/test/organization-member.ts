@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { User } from '@engspace/core';
 import { Dict } from '@engspace/server-db';
 import { Organization } from '@ohp/core';
-import { ORG_FIELDS, USER_FIELDS } from './graphql';
+import { ORG_MEMBER_FIELDS } from './graphql';
 import { dao, pool, th, buildGqlServer, auth } from '.';
 
 describe('GQL OrganizationMember', function () {
@@ -36,21 +36,89 @@ describe('GQL OrganizationMember', function () {
         return pool.transaction(async (db) => dao.organization.deleteById(db, org.id));
     });
 
+    describe('Query.organization.member', function () {
+        const ORG_READ_WITH_MEMBERS = gql`
+            query ReadOrgWithMembers($id: ID!) {
+                organization(id: $id) {
+                    members {
+                        ...OrgMemberFields
+                    }
+                }
+            }
+            ${ORG_MEMBER_FIELDS}
+        `;
+
+        it('should read an organization with members', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth(users.a));
+                return query({
+                    query: ORG_READ_WITH_MEMBERS,
+                    variables: {
+                        id: org.id,
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organization: {
+                    members: [
+                        {
+                            id: org.members[0].id,
+                            organization: { id: org.id },
+                            user: { id: users.a.id },
+                            roles: ['admin'],
+                        },
+                        {
+                            id: org.members[1].id,
+                            organization: { id: org.id },
+                            user: { id: users.b.id },
+                            roles: null,
+                        },
+                    ],
+                },
+            });
+        });
+
+        it('should read an organization with members without auth', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth());
+                return query({
+                    query: ORG_READ_WITH_MEMBERS,
+                    variables: {
+                        id: org.id,
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organization: {
+                    members: [
+                        {
+                            id: org.members[0].id,
+                            organization: { id: org.id },
+                            user: { id: users.a.id },
+                            roles: ['admin'],
+                        },
+                        {
+                            id: org.members[1].id,
+                            organization: { id: org.id },
+                            user: { id: users.b.id },
+                            roles: null,
+                        },
+                    ],
+                },
+            });
+        });
+    });
+
     describe('Mutation.organizationMemberAdd', function () {
         const ORG_MEMBER_ADD = gql`
             mutation AddOrgMember($input: OrganizationMemberInput!) {
                 organizationMemberAdd(input: $input) {
-                    organization {
-                        ...OrgFields
-                    }
-                    user {
-                        ...UserFields
-                    }
-                    roles
+                    ...OrgMemberFields
                 }
             }
-            ${ORG_FIELDS}
-            ${USER_FIELDS}
+            ${ORG_MEMBER_FIELDS}
         `;
 
         it('should add a member', async function () {
@@ -119,17 +187,10 @@ describe('GQL OrganizationMember', function () {
         const ORG_MEMBER_REM = gql`
             mutation RemOrgMember($memberId: ID!) {
                 organizationMemberRemove(memberId: $memberId) {
-                    organization {
-                        ...OrgFields
-                    }
-                    user {
-                        ...UserFields
-                    }
-                    roles
+                    ...OrgMemberFields
                 }
             }
-            ${ORG_FIELDS}
-            ${USER_FIELDS}
+            ${ORG_MEMBER_FIELDS}
         `;
 
         it('should remove a member', async function () {

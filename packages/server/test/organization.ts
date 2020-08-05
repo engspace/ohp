@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { User, Id } from '@engspace/core';
 import { Dict, idType } from '@engspace/server-db';
 import { Organization } from '@ohp/core';
-import { ORG_FIELDS, USER_FIELDS } from './graphql';
+import { ORG_FIELDS } from './graphql';
 import { dao, pool, th, buildGqlServer, auth } from '.';
 
 describe('GQL Organization', function () {
@@ -25,16 +25,9 @@ describe('GQL Organization', function () {
             query ReadOrg($id: ID!) {
                 organization(id: $id) {
                     ...OrgFields
-                    members {
-                        user {
-                            ...UserFields
-                        }
-                        roles
-                    }
                 }
             }
             ${ORG_FIELDS}
-            ${USER_FIELDS}
         `;
 
         let org: Organization;
@@ -44,7 +37,6 @@ describe('GQL Organization', function () {
                 org = await th.createOrg(db, {
                     name: 'org',
                     description: 'a description',
-                    members: [{ user: users.a, roles: ['admin'] }, { user: users.b }],
                 });
             });
         });
@@ -68,10 +60,6 @@ describe('GQL Organization', function () {
                 organization: {
                     name: 'org',
                     description: 'a description',
-                    members: [
-                        { user: { id: users.a.id }, roles: ['admin'] },
-                        { user: { id: users.b.id }, roles: null },
-                    ],
                 },
             });
         });

@@ -120,7 +120,7 @@ export class OrganizationControl {
     async memberUpdate(
         ctx: OhpContext,
         memberId: Id,
-        roles: string[]
+        roles: string[] | null
     ): Promise<OrganizationMember> {
         const {
             db,
@@ -128,7 +128,17 @@ export class OrganizationControl {
         } = ctx;
         const mem = await dao.organizationMember.byId(db, memberId);
         await assertUserOrOrganizationPerm(ctx, mem.organization.id, 'orgmember.update');
-        const includesSelf = roles.includes('self');
+        if (mem.roles?.includes('admin') && !roles?.includes('admin')) {
+            const count = await dao.organizationMember.countByOrganizationIdAndRole(
+                db,
+                mem.organization.id,
+                'admin'
+            );
+            if (count === 1) {
+                throw new UserInputError('cannot remove the last administrator');
+            }
+        }
+        const includesSelf = roles?.includes('self');
         const isSelf = await this.isSelf(ctx, mem);
         if (isSelf && !includesSelf) {
             throw new UserInputError('Cannot remove role "self"');

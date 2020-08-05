@@ -127,7 +127,7 @@ export class OrganizationMemberDao extends DaoBase<OrganizationMember, Row> {
     }
 
     async updateRolesById(db: Db, id: Id, roles: string[]): Promise<OrganizationMember> {
-        const row: Row = db.one(sql`
+        const row: Row = await db.one(sql`
             UPDATE organization_member SET
                 roles = ${roles.join(';')}
             WHERE id = ${id}

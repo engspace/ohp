@@ -265,4 +265,64 @@ describe('GQL OrganizationMember', function () {
             expect(errors[0].message.toLowerCase()).to.contain('admin');
         });
     });
+
+    describe('Mutation.organizationMemberUpdate', function () {
+        const ORG_MEMBER_UPDATE = gql`
+            mutation UpdateOrgMember($memberId: ID!, $roles: [String!]) {
+                organizationMemberUpdate(memberId: $memberId, roles: $roles) {
+                    ...OrgMemberFields
+                }
+            }
+            ${ORG_MEMBER_FIELDS}
+        `;
+        it('should update a member', async function () {
+            const { errors, data } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.a));
+                return mutate({
+                    mutation: ORG_MEMBER_UPDATE,
+                    variables: {
+                        memberId: org.members[1].id,
+                        roles: ['admin'],
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationMemberUpdate: {
+                    id: org.members[1].id,
+                    roles: ['admin'],
+                },
+            });
+        });
+
+        it('should not update a member without "admin" role', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.b));
+                return mutate({
+                    mutation: ORG_MEMBER_UPDATE,
+                    variables: {
+                        memberId: org.members[1].id,
+                        roles: ['admin'],
+                    },
+                });
+            });
+            expect(errors).to.be.not.undefined;
+            expect(errors[0].message).to.contain('orgmember.update');
+        });
+
+        it('should not remove "admin" role from last admin', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.a));
+                return mutate({
+                    mutation: ORG_MEMBER_UPDATE,
+                    variables: {
+                        memberId: org.members[0].id,
+                        roles: null,
+                    },
+                });
+            });
+            expect(errors).to.be.not.undefined;
+            expect(errors[0].message).to.contain('admin');
+        });
+    });
 });

@@ -11,9 +11,9 @@ import chaiAsPromised from 'chai-as-promised';
 import chaiHttp from 'chai-http';
 import chaiSubset from 'chai-subset';
 import 'mocha';
-import { AuthToken, HasId } from '@engspace/core';
+import { AuthToken, User } from '@engspace/core';
 import { buildTestGqlServer } from '@engspace/server-api';
-import { Db, syncSchema, prepareDb, passwordLogin } from '@engspace/server-db';
+import { Db, syncSchema, prepareDb } from '@engspace/server-db';
 import { runtime, config, dbPreparationConfig, ohpDbSchemaLevel } from '../src';
 import { buildOhpGqlSchema } from '../src/graphql';
 import ohpMigrations from '../src/migrations';
@@ -24,16 +24,20 @@ events.EventEmitter.defaultMaxListeners = 100;
 chai.use(chaiAsPromised);
 chai.use(chaiHttp);
 chai.use(chaiSubset);
+chai.config.truncateThreshold = 0;
 
 export const pool = runtime.pool;
 export const dao = runtime.dao;
 
 export const th = new OhpTestHelpers(pool, dao);
 
-export function permsAuth(user: HasId, userPerms: string[]): AuthToken {
+const defaultPerms = config.rolePolicies.user.permissions();
+const userPerms = config.rolePolicies.user.permissions(['user']);
+
+export function auth(user?: User): AuthToken {
     return {
-        userId: user.id,
-        userPerms,
+        userId: user?.id || '',
+        userPerms: user ? userPerms : defaultPerms,
     };
 }
 

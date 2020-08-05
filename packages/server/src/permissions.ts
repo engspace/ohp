@@ -22,6 +22,7 @@ const descriptors: OhpRoleDescriptors = {
             permissions: [
                 'project.create',
                 'project.update',
+                'org.update',
                 'orgmember.create',
                 'orgmember.update',
                 'orgmember.delete',

@@ -53,6 +53,7 @@ export default {
 
         extend type Mutation {
             organizationCreate(input: OrganizationInput!): Organization!
+            organizationUpdate(id: ID!, input: OrganizationInput!): Organization!
 
             organizationMemberAdd(input: OrganizationMemberInput!): OrganizationMember!
             organizationMemberRemove(memberId: ID!): OrganizationMember!
@@ -120,6 +121,14 @@ export default {
                 ctx: OhpGqlContext
             ): Promise<Organization> {
                 return ctx.runtime.control.organization.create(ctx, input);
+            },
+
+            organizationUpdate(
+                parent: unknown,
+                { id, input }: { id: Id; input: OrganizationInput },
+                ctx: OhpGqlContext
+            ): Promise<OrganizationInput> {
+                return ctx.runtime.control.organization.update(ctx, id, input);
             },
 
             organizationMemberAdd(

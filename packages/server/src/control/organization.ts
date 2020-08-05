@@ -55,6 +55,15 @@ export class OrganizationControl {
         return dao.organizationMember.byOrganizationAndUserId(db, org.id, selfUserId);
     }
 
+    async update(ctx: OhpContext, id: Id, input: OrganizationInput): Promise<Organization> {
+        await assertUserOrOrganizationPerm(ctx, id, 'org.update');
+        const {
+            db,
+            runtime: { dao },
+        } = ctx;
+        return await dao.organization.update(db, id, input);
+    }
+
     async memberAdd(ctx: OhpContext, input: OrganizationMemberInput): Promise<OrganizationMember> {
         await assertUserOrOrganizationPerm(ctx, input.organizationId, 'member.create');
         const {

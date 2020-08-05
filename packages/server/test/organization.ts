@@ -4,7 +4,7 @@ import { User, Id } from '@engspace/core';
 import { Dict, idType } from '@engspace/server-db';
 import { Organization } from '@ohp/core';
 import { ORG_FIELDS, USER_FIELDS } from './graphql';
-import { dao, pool, th, buildGqlServer, permsAuth } from '.';
+import { dao, pool, th, buildGqlServer, auth } from '.';
 
 describe('Organization', function () {
     let users: Dict<User>;
@@ -44,11 +44,7 @@ describe('Organization', function () {
                 org = await th.createOrg(db, {
                     name: 'org',
                     description: 'a description',
-                    members: [
-                        { user: users.a, roles: ['admin'] },
-                        { user: users.b, roles: ['designer'] },
-                        { user: users.c },
-                    ],
+                    members: [{ user: users.a, roles: ['admin'] }, { user: users.b }],
                 });
             });
         });
@@ -59,10 +55,7 @@ describe('Organization', function () {
 
         it('should read an organization', async function () {
             const { errors, data } = await pool.connect(async (db) => {
-                const { query } = buildGqlServer(
-                    db,
-                    permsAuth(users.a, ['org.read', 'orgmember.read', 'user.read'])
-                );
+                const { query } = buildGqlServer(db, auth(users.a));
                 return query({
                     query: ORG_READ,
                     variables: {
@@ -77,8 +70,7 @@ describe('Organization', function () {
                     description: 'a description',
                     members: [
                         { user: { id: users.a.id }, roles: ['admin'] },
-                        { user: { id: users.b.id }, roles: ['designer'] },
-                        { user: { id: users.c.id }, roles: null },
+                        { user: { id: users.b.id }, roles: null },
                     ],
                 },
             });
@@ -103,7 +95,7 @@ describe('Organization', function () {
 
         it('should create an organization', async function () {
             const { errors, data } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, permsAuth(users.a, ['org.create']));
+                const { mutate } = buildGqlServer(db, auth(users.a));
                 return mutate({
                     mutation: ORG_CREATE,
                     variables: {
@@ -126,9 +118,9 @@ describe('Organization', function () {
             orgId = data.organizationCreate.id;
         });
 
-        it('should not create an organization without "org.create"', async function () {
+        it('should not create an organization without auth', async function () {
             const { errors } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, permsAuth(users.a, []));
+                const { mutate } = buildGqlServer(db, auth());
                 return mutate({
                     mutation: ORG_CREATE,
                     variables: {
@@ -141,6 +133,76 @@ describe('Organization', function () {
             });
             expect(errors).to.be.not.empty;
             expect(errors[0].message).to.contain('org.create');
+        });
+    });
+
+    describe('Organization Update', function () {
+        const ORG_UPDATE = gql`
+            mutation UpdateOrg($id: ID!, $input: OrganizationInput!) {
+                organizationUpdate(id: $id, input: $input) {
+                    ...OrgFields
+                }
+            }
+            ${ORG_FIELDS}
+        `;
+
+        let org: Organization;
+
+        beforeEach(function () {
+            return pool.transaction(async (db) => {
+                org = await th.createOrg(db, {
+                    name: 'org',
+                    description: 'a description',
+                    members: [{ user: users.a, roles: ['admin'] }, { user: users.b }],
+                });
+            });
+        });
+
+        afterEach(function () {
+            return pool.transaction(async (db) => dao.organization.deleteById(db, org.id));
+        });
+
+        it('should update an organization', async function () {
+            const { errors, data } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.a));
+                return mutate({
+                    mutation: ORG_UPDATE,
+                    variables: {
+                        id: org.id,
+                        input: {
+                            name: 'updatedorg',
+                            description: 'an updated description',
+                        },
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationUpdate: {
+                    id: org.id,
+                    name: 'updatedorg',
+                    description: 'an updated description',
+                    selfUser: null,
+                },
+            });
+        });
+
+        it('should update not update an organization without admin role', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.b));
+                return mutate({
+                    mutation: ORG_UPDATE,
+                    variables: {
+                        id: org.id,
+                        input: {
+                            name: 'updatedorg',
+                            description: 'an updated description',
+                        },
+                    },
+                });
+            });
+            expect(errors).to.be.not.empty;
+            expect(errors[0].message).to.contain('org.update');
         });
     });
 });

@@ -113,6 +113,19 @@ export class OrganizationMemberDao extends DaoBase<OrganizationMember, Row> {
         return mapRow(row);
     }
 
+    /**
+     * Count the number of members with specified role from an organization
+     * @param db the database connection
+     * @param organizationId the organization
+     * @param role the role to look for
+     */
+    async countByOrganizationIdAndRole(db: Db, organizationId: Id, role: string): Promise<number> {
+        return db.oneFirst<number>(sql`
+            SELECT COUNT(*) FROM organization_member
+            WHERE organization_id=${organizationId} AND roles ILIKE ${'%' + role + '%'}
+        `);
+    }
+
     async updateRolesById(db: Db, id: Id, roles: string[]): Promise<OrganizationMember> {
         const row: Row = db.one(sql`
             UPDATE organization_member SET

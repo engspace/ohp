@@ -160,6 +160,21 @@ describe('Organization', function () {
             ${ORG_FIELDS}
             ${USER_FIELDS}
         `;
+        const ORG_MEMBER_REM = gql`
+            mutation RemOrgMember($memberId: ID!) {
+                organizationMemberRemove(memberId: $memberId) {
+                    organization {
+                        ...OrgFields
+                    }
+                    user {
+                        ...UserFields
+                    }
+                    roles
+                }
+            }
+            ${ORG_FIELDS}
+            ${USER_FIELDS}
+        `;
 
         let org: Organization;
 
@@ -280,6 +295,78 @@ describe('Organization', function () {
             });
             expect(errors).to.be.not.be.undefined;
             expect(errors[0].message).to.contain('orgmember.create');
+        });
+
+        it('should remove a member', async function () {
+            const { errors, data } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.a));
+                return mutate({
+                    mutation: ORG_MEMBER_REM,
+                    variables: {
+                        memberId: org.members[1].id,
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationMemberRemove: {
+                    organization: {
+                        id: org.id,
+                    },
+                    user: { id: users.b.id },
+                    roles: null,
+                },
+            });
+        });
+
+        it('should not remove a member without "admin"', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.b));
+                return mutate({
+                    mutation: ORG_MEMBER_REM,
+                    variables: {
+                        memberId: org.members[0].id,
+                    },
+                });
+            });
+            expect(errors).to.be.not.undefined;
+            expect(errors[0].message).to.contain('orgmember.delete');
+        });
+
+        it('should self remove a member without "admin"', async function () {
+            const { errors, data } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.b));
+                return mutate({
+                    mutation: ORG_MEMBER_REM,
+                    variables: {
+                        memberId: org.members[1].id,
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationMemberRemove: {
+                    organization: {
+                        id: org.id,
+                    },
+                    user: { id: users.b.id },
+                    roles: null,
+                },
+            });
+        });
+
+        it('should not remove the last "admin" member', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.a));
+                return mutate({
+                    mutation: ORG_MEMBER_REM,
+                    variables: {
+                        memberId: org.members[0].id,
+                    },
+                });
+            });
+            expect(errors).to.be.not.undefined;
+            expect(errors[0].message.toLowerCase()).to.contain('admin');
         });
     });
 });

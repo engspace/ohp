@@ -141,10 +141,26 @@ export class OrganizationControl {
     async memberRemove(ctx: OhpContext, memberId: Id): Promise<OrganizationMember> {
         const {
             db,
+            auth: { userId },
             runtime: { dao },
         } = ctx;
         const mem = await dao.organizationMember.byId(db, memberId);
-        await assertUserOrOrganizationPerm(ctx, mem.organization.id, 'orgmember.delete');
+        // allow to self remove from an organization without permission
+        if (userId && mem.user.id !== userId) {
+            await assertUserOrOrganizationPerm(ctx, mem.organization.id, 'orgmember.delete');
+        }
+        // disallow to remove the last "admin" role member
+        if (mem.roles?.includes('admin')) {
+            const adminCount = await dao.organizationMember.countByOrganizationIdAndRole(
+                db,
+                mem.organization.id,
+                'admin'
+            );
+            if (adminCount === 1) {
+                throw new UserInputError('Cannot remove the last administrator');
+            }
+        }
+        // disallow to remove from self organization
         if (await this.isSelf(ctx, mem)) {
             throw new UserInputError('Cannot remove user from self organization');
         }

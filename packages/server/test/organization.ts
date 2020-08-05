@@ -6,7 +6,7 @@ import { Organization } from '@ohp/core';
 import { ORG_FIELDS, USER_FIELDS } from './graphql';
 import { dao, pool, th, buildGqlServer, auth } from '.';
 
-describe('Organization', function () {
+describe('GQL Organization', function () {
     let users: Dict<User>;
     before(function () {
         return pool.transaction(async (db) => {
@@ -20,7 +20,7 @@ describe('Organization', function () {
     });
     after(th.cleanTables(['organization_member'], { withDeps: true }));
 
-    describe('Organization Read', function () {
+    describe('Query.organization', function () {
         const ORG_READ = gql`
             query ReadOrg($id: ID!) {
                 organization(id: $id) {
@@ -76,7 +76,7 @@ describe('Organization', function () {
             });
         });
     });
-    describe('Organization Create', function () {
+    describe('Mutation.organizationCreate', function () {
         const ORG_CREATE = gql`
             mutation CreateOrg($input: OrganizationInput!) {
                 organizationCreate(input: $input) {
@@ -136,7 +136,7 @@ describe('Organization', function () {
         });
     });
 
-    describe('Organization Update', function () {
+    describe('Mutation.organizationUpdate', function () {
         const ORG_UPDATE = gql`
             mutation UpdateOrg($id: ID!, $input: OrganizationInput!) {
                 organizationUpdate(id: $id, input: $input) {
@@ -144,36 +144,6 @@ describe('Organization', function () {
                 }
             }
             ${ORG_FIELDS}
-        `;
-        const ORG_MEMBER_ADD = gql`
-            mutation AddOrgMember($input: OrganizationMemberInput!) {
-                organizationMemberAdd(input: $input) {
-                    organization {
-                        ...OrgFields
-                    }
-                    user {
-                        ...UserFields
-                    }
-                    roles
-                }
-            }
-            ${ORG_FIELDS}
-            ${USER_FIELDS}
-        `;
-        const ORG_MEMBER_REM = gql`
-            mutation RemOrgMember($memberId: ID!) {
-                organizationMemberRemove(memberId: $memberId) {
-                    organization {
-                        ...OrgFields
-                    }
-                    user {
-                        ...UserFields
-                    }
-                    roles
-                }
-            }
-            ${ORG_FIELDS}
-            ${USER_FIELDS}
         `;
 
         let org: Organization;
@@ -233,140 +203,6 @@ describe('Organization', function () {
             });
             expect(errors).to.be.not.empty;
             expect(errors[0].message).to.contain('org.update');
-        });
-
-        it('should add a member', async function () {
-            const { errors, data } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth(users.a));
-                return mutate({
-                    mutation: ORG_MEMBER_ADD,
-                    variables: {
-                        input: {
-                            organizationId: org.id,
-                            userId: users.c.id,
-                            roles: ['admin'],
-                        },
-                    },
-                });
-            });
-            expect(errors).to.be.undefined;
-            expect(data).to.containSubset({
-                organizationMemberAdd: {
-                    organization: {
-                        id: org.id,
-                    },
-                    user: { id: users.c.id },
-                    roles: ['admin'],
-                },
-            });
-        });
-
-        it('should not add a member without admin role', async function () {
-            const { errors } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth(users.b));
-                return mutate({
-                    mutation: ORG_MEMBER_ADD,
-                    variables: {
-                        input: {
-                            organizationId: org.id,
-                            userId: users.c.id,
-                            roles: ['admin'],
-                        },
-                    },
-                });
-            });
-            expect(errors).to.be.not.be.undefined;
-            expect(errors[0].message).to.contain('orgmember.create');
-        });
-
-        it('should not add a member without auth', async function () {
-            const { errors } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth());
-                return mutate({
-                    mutation: ORG_MEMBER_ADD,
-                    variables: {
-                        input: {
-                            organizationId: org.id,
-                            userId: users.c.id,
-                            roles: ['admin'],
-                        },
-                    },
-                });
-            });
-            expect(errors).to.be.not.be.undefined;
-            expect(errors[0].message).to.contain('orgmember.create');
-        });
-
-        it('should remove a member', async function () {
-            const { errors, data } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth(users.a));
-                return mutate({
-                    mutation: ORG_MEMBER_REM,
-                    variables: {
-                        memberId: org.members[1].id,
-                    },
-                });
-            });
-            expect(errors).to.be.undefined;
-            expect(data).to.containSubset({
-                organizationMemberRemove: {
-                    organization: {
-                        id: org.id,
-                    },
-                    user: { id: users.b.id },
-                    roles: null,
-                },
-            });
-        });
-
-        it('should not remove a member without "admin"', async function () {
-            const { errors } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth(users.b));
-                return mutate({
-                    mutation: ORG_MEMBER_REM,
-                    variables: {
-                        memberId: org.members[0].id,
-                    },
-                });
-            });
-            expect(errors).to.be.not.undefined;
-            expect(errors[0].message).to.contain('orgmember.delete');
-        });
-
-        it('should self remove a member without "admin"', async function () {
-            const { errors, data } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth(users.b));
-                return mutate({
-                    mutation: ORG_MEMBER_REM,
-                    variables: {
-                        memberId: org.members[1].id,
-                    },
-                });
-            });
-            expect(errors).to.be.undefined;
-            expect(data).to.containSubset({
-                organizationMemberRemove: {
-                    organization: {
-                        id: org.id,
-                    },
-                    user: { id: users.b.id },
-                    roles: null,
-                },
-            });
-        });
-
-        it('should not remove the last "admin" member', async function () {
-            const { errors } = await pool.transaction(async (db) => {
-                const { mutate } = buildGqlServer(db, auth(users.a));
-                return mutate({
-                    mutation: ORG_MEMBER_REM,
-                    variables: {
-                        memberId: org.members[0].id,
-                    },
-                });
-            });
-            expect(errors).to.be.not.undefined;
-            expect(errors[0].message.toLowerCase()).to.contain('admin');
         });
     });
 });

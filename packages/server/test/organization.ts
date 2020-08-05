@@ -63,7 +63,139 @@ describe('GQL Organization', function () {
                 },
             });
         });
+
+        it('should read an organization without auth', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth());
+                return query({
+                    query: ORG_READ,
+                    variables: {
+                        id: org.id,
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organization: {
+                    name: 'org',
+                    description: 'a description',
+                },
+            });
+        });
     });
+
+    describe('Query.organizationByName and selfUser', function () {
+        const ORG_READ_BY_NAME = gql`
+            query ReadOrgByName($name: String!) {
+                organizationByName(name: $name) {
+                    ...OrgFields
+                }
+            }
+            ${ORG_FIELDS}
+        `;
+
+        let org: Organization;
+
+        before(function () {
+            return pool.transaction(async (db) => {
+                org = await th.createOrg(db, {
+                    name: 'org',
+                    description: 'a description',
+                });
+            });
+        });
+
+        after(function () {
+            return pool.transaction(async (db) => dao.organization.deleteById(db, org.id));
+        });
+
+        it('should read org by name', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth(users.a));
+                return query({
+                    query: ORG_READ_BY_NAME,
+                    variables: {
+                        name: 'org',
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationByName: {
+                    id: org.id,
+                    name: 'org',
+                    description: 'a description',
+                    selfUser: null,
+                },
+            });
+        });
+
+        it('should read org by name without auth', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth());
+                return query({
+                    query: ORG_READ_BY_NAME,
+                    variables: {
+                        name: 'org',
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationByName: {
+                    id: org.id,
+                    name: 'org',
+                    description: 'a description',
+                    selfUser: null,
+                },
+            });
+        });
+
+        it('should read selfUser of self org by name', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth(users.a));
+                return query({
+                    query: ORG_READ_BY_NAME,
+                    variables: {
+                        name: 'b',
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationByName: {
+                    name: 'b',
+                    selfUser: {
+                        id: users.b.id,
+                        name: 'b',
+                    },
+                },
+            });
+        });
+
+        it('should read selfUser of self org by name without auth', async function () {
+            const { errors, data } = await pool.connect(async (db) => {
+                const { query } = buildGqlServer(db, auth());
+                return query({
+                    query: ORG_READ_BY_NAME,
+                    variables: {
+                        name: 'b',
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationByName: {
+                    name: 'b',
+                    selfUser: {
+                        id: users.b.id,
+                        name: 'b',
+                    },
+                },
+            });
+        });
+    });
+
     describe('Mutation.organizationCreate', function () {
         const ORG_CREATE = gql`
             mutation CreateOrg($input: OrganizationInput!) {

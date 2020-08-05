@@ -55,7 +55,7 @@ export class OrganizationDao extends DaoBase<Organization, Row> {
     }
 
     async byName(db: Db, name: string): Promise<Organization | null> {
-        const row: Row = await db.mayBeOne(sql`
+        const row: Row = await db.maybeOne(sql`
             SELECT ${rowToken} FROM organization
             WHERE name = ${name}
         `);

@@ -65,7 +65,7 @@ export class OrganizationControl {
     }
 
     async memberAdd(ctx: OhpContext, input: OrganizationMemberInput): Promise<OrganizationMember> {
-        await assertUserOrOrganizationPerm(ctx, input.organizationId, 'member.create');
+        await assertUserOrOrganizationPerm(ctx, input.organizationId, 'orgmember.create');
         const {
             db,
             runtime: { dao },

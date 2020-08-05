@@ -14,6 +14,7 @@ export async function checkUserOrOrganizationPerm(
         config: { rolePolicies },
     } = ctx;
     if (userPerms.includes(perm)) return true;
+    if (!userId) return false;
     const member = await dao.organizationMember.byOrganizationAndUserId(db, organizationId, userId);
     if (!member) {
         return false;

@@ -145,6 +145,21 @@ describe('Organization', function () {
             }
             ${ORG_FIELDS}
         `;
+        const ORG_MEMBER_ADD = gql`
+            mutation AddOrgMember($input: OrganizationMemberInput!) {
+                organizationMemberAdd(input: $input) {
+                    organization {
+                        ...OrgFields
+                    }
+                    user {
+                        ...UserFields
+                    }
+                    roles
+                }
+            }
+            ${ORG_FIELDS}
+            ${USER_FIELDS}
+        `;
 
         let org: Organization;
 
@@ -203,6 +218,68 @@ describe('Organization', function () {
             });
             expect(errors).to.be.not.empty;
             expect(errors[0].message).to.contain('org.update');
+        });
+
+        it('should add a member', async function () {
+            const { errors, data } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.a));
+                return mutate({
+                    mutation: ORG_MEMBER_ADD,
+                    variables: {
+                        input: {
+                            organizationId: org.id,
+                            userId: users.c.id,
+                            roles: ['admin'],
+                        },
+                    },
+                });
+            });
+            expect(errors).to.be.undefined;
+            expect(data).to.containSubset({
+                organizationMemberAdd: {
+                    organization: {
+                        id: org.id,
+                    },
+                    user: { id: users.c.id },
+                    roles: ['admin'],
+                },
+            });
+        });
+
+        it('should not add a member without admin role', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth(users.b));
+                return mutate({
+                    mutation: ORG_MEMBER_ADD,
+                    variables: {
+                        input: {
+                            organizationId: org.id,
+                            userId: users.c.id,
+                            roles: ['admin'],
+                        },
+                    },
+                });
+            });
+            expect(errors).to.be.not.be.undefined;
+            expect(errors[0].message).to.contain('orgmember.create');
+        });
+
+        it('should not add a member without auth', async function () {
+            const { errors } = await pool.transaction(async (db) => {
+                const { mutate } = buildGqlServer(db, auth());
+                return mutate({
+                    mutation: ORG_MEMBER_ADD,
+                    variables: {
+                        input: {
+                            organizationId: org.id,
+                            userId: users.c.id,
+                            roles: ['admin'],
+                        },
+                    },
+                });
+            });
+            expect(errors).to.be.not.be.undefined;
+            expect(errors[0].message).to.contain('orgmember.create');
         });
     });
 });

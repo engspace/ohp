@@ -19,3 +19,18 @@ export const ORG_FIELDS = gql`
     }
     ${USER_FIELDS}
 `;
+
+export const ORG_MEMBER_FIELDS = gql`
+    fragment OrgMemberFields on OrganizationMember {
+        id
+        organization {
+            ...OrgFields
+        }
+        user {
+            ...UserFields
+        }
+        roles
+    }
+    ${ORG_FIELDS}
+    ${USER_FIELDS}
+`;

@@ -135,34 +135,4 @@ export class OrganizationMemberDao extends DaoBase<OrganizationMember, Row> {
         `);
         return mapRow(row);
     }
-
-    /**
-     * Delete all members from a organization
-     */
-    async deleteByProjId(db: Db, organizationId: Id): Promise<void> {
-        await db.query(sql`
-            DELETE FROM organization_member
-            WHERE organization_id = ${organizationId}
-        `);
-    }
-
-    /**
-     * Delete all organization memberships from a user
-     */
-    async deleteByUserId(db: Db, userId: Id): Promise<void> {
-        await db.query(sql`
-            DELETE FROM organization_member
-            WHERE user_id = ${userId}
-        `);
-    }
-
-    /**
-     * Delete a member from a organization
-     */
-    async deleteByOrganizationAndUserId(db: Db, organizationId: Id, userId: Id): Promise<void> {
-        await db.query(sql`
-            DELETE FROM organization_member
-            WHERE organization_id=${organizationId} AND user_id=${userId}
-        `);
-    }
 }
